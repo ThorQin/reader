@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">轻阅读</string>
     <string name="search_book">搜索图书</string>
+	<string name="no_book">没有图书 点击搜索</string>
 </resources>

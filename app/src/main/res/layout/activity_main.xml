@@ -1,70 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/colorBlack"
-    tools:context=".MainActivity">
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/colorBlack"
+	tools:context=".MainActivity">
 
-    <ListView
-        android:visibility="gone"
-        android:id="@+id/fileList"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"></ListView>
+	<ListView
+		android:id="@+id/fileList"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:visibility="gone" />
 
-    <LinearLayout
-        android:visibility="gone"
-        android:id="@+id/searchButton"
-        android:orientation="vertical"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:gravity="center_horizontal"
-        android:focusableInTouchMode="true"
-        android:clickable="true"
-        >
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_search_gray_64dp">
+	<Button
+		android:id="@+id/searchButton"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:background="@color/colorBlack"
+		android:drawableTop="@drawable/ic_search_gray_64dp"
+		android:gravity="center_horizontal"
+		android:orientation="vertical"
+		android:text="@string/no_book"
+		android:textColor="#FFFFFF"
+		android:visibility="gone"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent" />
 
-        </ImageView>
-        <TextView
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="没有图书\n点击搜索"
-            android:textSize="8pt"
-            android:textColor="#AAAAAA"
-            ></TextView>
-    </LinearLayout>
+	<LinearLayout
+		android:id="@+id/loading_bar"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:gravity="center_horizontal"
+		android:orientation="vertical"
+		android:visibility="gone"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintTop_toTopOf="parent">
 
-    <LinearLayout
-        android:visibility="gone"
-        android:id="@+id/loading_bar"
-        android:orientation="vertical"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:gravity="center_horizontal"
-        >
-        <ProgressBar
-            style="@android:style/Widget.ProgressBar.Large"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"></ProgressBar>
-        <TextView
-            android:id="@+id/loading_status"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:padding="5dp"
-						android:textColor="#FFFFFF"
-						android:ellipsize="end"
-						android:textAlignment="center"
-            android:textSize="8pt"></TextView>
-    </LinearLayout>
+		<ProgressBar
+			style="@android:style/Widget.Material.ProgressBar.Large"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+
+		<TextView
+			android:id="@+id/loading_status"
+			android:layout_width="match_parent"
+			android:layout_height="200dp"
+			android:ellipsize="middle"
+			android:padding="5dp"
+			android:singleLine="false"
+			android:textAlignment="center"
+			android:textColor="#FFFFFF"
+			android:textSize="8pt" />
+	</LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

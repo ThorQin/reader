@@ -9,7 +9,6 @@ import android.os.*
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Window
-import android.widget.LinearLayout
 
 import com.google.gson.Gson
 
@@ -17,9 +16,9 @@ import org.apache.commons.io.FileUtils
 import java.lang.Exception
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.view.View.*
-import android.widget.ListView
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import java.io.File
@@ -30,28 +29,15 @@ import kotlin.collections.ArrayList
 var TEXT_FILE = Regex(".+\\.txt$", RegexOption.IGNORE_CASE)
 
 const val MIN_FILE_SIZE = 1024 * 200
-const val SHOW_BOOKS = 1
-const val SHOW_SEARCH_FILE = 2
 
 class MainActivity : AppCompatActivity() {
 
-	private var listView : ListView? = null
-	private var searchButton: LinearLayout? = null
+	private var listView: ListView? = null
+	private var searchButton: View? = null
 	private var loadingBar: LinearLayout? = null
 	private var loadingStatus: TextView? = null
-	private var config : AppConfig? = null
+	private var config: AppConfig? = null
 	private var searching = false
-
-	private var handler = MessageHandler(WeakReference(this))
-
-	class MessageHandler(private val activity: WeakReference<MainActivity>) : Handler() {
-		override fun handleMessage(msg: Message) {
-			when (msg.what) {
-				SHOW_BOOKS -> activity.get()?.showFiles()
-				SHOW_SEARCH_FILE -> activity.get()?.showSearchFile(msg.data.getString("file"))
-			}
-		}
-	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -59,23 +45,34 @@ class MainActivity : AppCompatActivity() {
 		setContentView(R.layout.activity_main)
 
 		listView = findViewById<ListView>(R.id.fileList)
-		searchButton = findViewById<LinearLayout>(R.id.searchButton)
+		searchButton = findViewById<View>(R.id.searchButton)
 		loadingBar = findViewById<LinearLayout>(R.id.loading_bar)
 		loadingStatus = findViewById<TextView>(R.id.loading_status)
 
-		searchButton?.setOnClickListener {
+		searchButton!!.setOnClickListener {
 			searchBooks()
 		}
 
 		config = try {
-			var configContent = FileUtils.readFileToString(
-				application.filesDir.resolve("config.json"), "utf-8")
-			var gson = Gson()
+			val configContent = FileUtils.readFileToString(
+				application.filesDir.resolve("config.json"), "utf-8"
+			)
+			val gson = Gson()
 			gson.fromJson(configContent, AppConfig::class.java)
 		} catch (e: Exception) {
 			AppConfig()
 		}
 		showFiles()
+	}
+
+	private fun saveConfig() {
+		try {
+			val gson = Gson()
+			val content = gson.toJson(config)
+			FileUtils.writeStringToFile(application.filesDir.resolve("config.json"), content, "utf-8")
+		} catch (e: Exception) {
+			System.err.println("Save config failed: " + e.message)
+		}
 	}
 
 	override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -95,20 +92,16 @@ class MainActivity : AppCompatActivity() {
 	}
 
 
-	private fun searchPath(path: File, found: ArrayList<File>, level: Int) {
+	private fun searchPath(path: File, found: ArrayList<File>, level: Int, scanFile: Array<String>) {
 		var files = path.listFiles() ?: return
 		for (f in files) {
-			showSearchFile(f.absolutePath)
-//			var msg = handler.obtainMessage(SHOW_SEARCH_FILE)
-//			var bd = Bundle()
-//			bd.putString("file", f.absolutePath)
-//			msg.data = bd
-//			handler.sendMessage(msg)
+			scanFile[0] = f.absolutePath
 			if (f.isDirectory) {
 				if (level < 4)
-					searchPath(f, found, level + 1)
+					searchPath(f, found, level + 1, scanFile)
 			} else if (TEXT_FILE.matches(f.name)) {
-				found.add(f)
+				if (f.length() >= MIN_FILE_SIZE)
+					found.add(f)
 			}
 		}
 	}
@@ -116,12 +109,14 @@ class MainActivity : AppCompatActivity() {
 	private fun searchBooksInternal() {
 		if (searching) return
 		searching = true
-		listView?.visibility  = GONE
+		listView?.visibility = GONE
 		searchButton?.visibility = GONE
 		loadingBar?.visibility = VISIBLE
 
-
-		// var thread = Thread {
+		var scanFile = arrayOf("")
+		var rootPathLength = 0
+		var timer = Timer()
+		var thread = Thread {
 			try {
 				config!!.files.forEach {
 					if (!File(it.key).exists()) {
@@ -131,24 +126,50 @@ class MainActivity : AppCompatActivity() {
 
 				var found = ArrayList<File>()
 				var p = Environment.getExternalStorageDirectory()
-				if (p.isDirectory) searchPath(p, found, 0)
+				rootPathLength = p.absolutePath.length
+				if (p.isDirectory) {
+					searchPath(p, found, 0, scanFile)
+				}
 				found.forEach {
 					if (!config!!.files.containsKey(it.absolutePath)) {
 						var fc = FileConfig()
 						fc.initialized = false
+						fc.path = it.absolutePath
 						fc.name = it.nameWithoutExtension
-						config!!.files.put(it.absolutePath, fc)
+						fc.totalLength = it.length()
+						config!!.files[it.absolutePath] = fc
+					} else {
+						var fc = config!!.files[it.absolutePath]
+						if (fc!!.totalLength != it.length()) {
+							var fc = FileConfig()
+							fc.initialized = false
+							fc.path = it.absolutePath
+							fc.name = it.nameWithoutExtension
+							fc.totalLength = it.length()
+							config!!.files[it.absolutePath] = fc
+						}
 					}
 				}
+				saveConfig()
 			} finally {
+				timer.cancel()
 				searching = false
-				showFiles()
-//				var msg = handler.obtainMessage(SHOW_BOOKS)
-//				handler.sendMessage(msg)
+				runOnUiThread {
+					showFiles()
+				}
 			}
-//		}
-//		thread.isDaemon = false
-//		thread.start()
+		}
+
+		timer.schedule(object : TimerTask() {
+			override fun run() {
+				runOnUiThread {
+					showSearchFile(scanFile[0].substring(rootPathLength))
+				}
+			}
+		}, 0, 50)
+
+		thread.isDaemon = true
+		thread.start()
 
 	}
 
@@ -156,7 +177,14 @@ class MainActivity : AppCompatActivity() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			var i = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
 			if (i != PackageManager.PERMISSION_GRANTED) {
-				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+				ActivityCompat.requestPermissions(
+					this,
+					arrayOf(
+						Manifest.permission.WRITE_EXTERNAL_STORAGE,
+						Manifest.permission.READ_EXTERNAL_STORAGE
+					),
+					1
+				)
 			} else {
 				searchBooksInternal()
 			}
@@ -168,16 +196,25 @@ class MainActivity : AppCompatActivity() {
 	private fun showFiles() {
 		loadingBar?.visibility = GONE
 		if (config!!.files.isEmpty()) {
-			listView?.visibility  = GONE
+			listView?.visibility = GONE
 			searchButton?.visibility = VISIBLE
 		} else {
-			listView?.visibility  = VISIBLE
+			listView?.visibility = VISIBLE
 			searchButton?.visibility = GONE
+
+			var list = mutableListOf<FileConfig>()
+			if (config != null) {
+				for (m in config!!.files.entries) {
+					list.add(m.value)
+				}
+			}
+			listView?.adapter = BookListAdapter(this, list)
 		}
 	}
 
-	private fun showSearchFile(file: String) {
-		loadingStatus?.text = file
+	private fun showSearchFile(file: String?) {
+		if (file != null)
+			loadingStatus?.text = file
 	}
 
 	override fun onRequestPermissionsResult(

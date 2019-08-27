@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.chauthai.swipereveallayout.SwipeRevealLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	app:dragEdge="right"
+	app:mode="same_level">
+
+	<FrameLayout
+		android:layout_width="wrap_content"
+		android:layout_height="match_parent"
+		android:background="@color/colorAccent"
+		>
+		<TextView
+			android:layout_gravity="center"
+			android:layout_width="80dp"
+			android:layout_height="match_parent"
+			android:textColor="@color/colorWhite"
+			android:textAlignment="center"
+			android:text="删除"/>
+	</FrameLayout>
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:background="@drawable/book_item_bg"
+		android:clickable="true"
+		android:gravity="center_vertical"
+		android:orientation="horizontal"
+		android:paddingTop="5dp"
+		android:paddingBottom="5dp">
+
+		<ImageView
+			android:id="@+id/imageView"
+			android:layout_width="94dp"
+			android:layout_height="wrap_content"
+			app:srcCompat="@drawable/book" />
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical">
+
+			<TextView
+				android:id="@+id/book_name"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:maxLines="2"
+				android:text="TextView"
+				android:textColor="#FFFFFF"
+				android:textSize="10pt" />
+
+			<TextView
+				android:id="@+id/reading_progress"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="5dp"
+				android:maxLines="1"
+				android:text="TextView"
+				android:textColor="#888"
+				android:textSize="8pt" />
+		</LinearLayout>
+
+	</LinearLayout>
+</com.chauthai.swipereveallayout.SwipeRevealLayout>
