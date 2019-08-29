@@ -16,13 +16,11 @@ import org.apache.commons.io.FileUtils
 import java.lang.Exception
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.view.View.*
-import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
-import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -32,37 +30,53 @@ const val MIN_FILE_SIZE = 1024 * 200
 
 class MainActivity : AppCompatActivity() {
 
-	private var listView: ListView? = null
-	private var searchButton: View? = null
-	private var loadingBar: LinearLayout? = null
-	private var loadingStatus: TextView? = null
 	private var config: AppConfig? = null
 	private var searching = false
+	private var scanFile = arrayOf("")
+	private var bookAdapter: BookListAdapter? = null
+
+	private fun setScanFile(f: String) {
+		synchronized(scanFile) {
+			scanFile[0] = f
+		}
+	}
+	private fun getScanFile(): String {
+		synchronized(scanFile) {
+			return scanFile[0]
+		}
+	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		requestWindowFeature(Window.FEATURE_NO_TITLE)
+
 		setContentView(R.layout.activity_main)
 
-		listView = findViewById<ListView>(R.id.fileList)
-		searchButton = findViewById<View>(R.id.searchButton)
-		loadingBar = findViewById<LinearLayout>(R.id.loading_bar)
-		loadingStatus = findViewById<TextView>(R.id.loading_status)
+		bookAdapter = BookListAdapter(this) {
+			config!!.files.remove(it)
+			saveConfig()
+			showFiles()
+		}
 
 		searchButton!!.setOnClickListener {
 			searchBooks()
 		}
 
+		fileList?.adapter = bookAdapter
+
 		config = try {
+
 			val configContent = FileUtils.readFileToString(
 				application.filesDir.resolve("config.json"), "utf-8"
 			)
 			val gson = Gson()
 			gson.fromJson(configContent, AppConfig::class.java)
+
 		} catch (e: Exception) {
 			AppConfig()
 		}
 		showFiles()
+		this.setTheme(R.style.MainActivityTheme)
 	}
 
 	private fun saveConfig() {
@@ -87,18 +101,24 @@ class MainActivity : AppCompatActivity() {
 				searchBooks()
 				true
 			}
+			R.id.empty_book -> {
+				config?.files?.clear()
+				saveConfig()
+				showFiles()
+				true
+			}
 			else -> super.onOptionsItemSelected(item)
 		}
 	}
 
 
-	private fun searchPath(path: File, found: ArrayList<File>, level: Int, scanFile: Array<String>) {
+	private fun searchPath(path: File, found: ArrayList<File>, level: Int) {
 		var files = path.listFiles() ?: return
 		for (f in files) {
-			scanFile[0] = f.absolutePath
+			setScanFile(f.absolutePath)
 			if (f.isDirectory) {
 				if (level < 4)
-					searchPath(f, found, level + 1, scanFile)
+					searchPath(f, found, level + 1)
 			} else if (TEXT_FILE.matches(f.name)) {
 				if (f.length() >= MIN_FILE_SIZE)
 					found.add(f)
@@ -109,11 +129,11 @@ class MainActivity : AppCompatActivity() {
 	private fun searchBooksInternal() {
 		if (searching) return
 		searching = true
-		listView?.visibility = GONE
+		fileList?.visibility = GONE
 		searchButton?.visibility = GONE
 		loadingBar?.visibility = VISIBLE
 
-		var scanFile = arrayOf("")
+
 		var rootPathLength = 0
 		var timer = Timer()
 		var thread = Thread {
@@ -128,11 +148,11 @@ class MainActivity : AppCompatActivity() {
 				var p = Environment.getExternalStorageDirectory()
 				rootPathLength = p.absolutePath.length
 				if (p.isDirectory) {
-					searchPath(p, found, 0, scanFile)
+					searchPath(p, found, 0)
 				}
 				found.forEach {
 					if (!config!!.files.containsKey(it.absolutePath)) {
-						var fc = FileConfig()
+						var fc = FileSummary()
 						fc.initialized = false
 						fc.path = it.absolutePath
 						fc.name = it.nameWithoutExtension
@@ -141,7 +161,7 @@ class MainActivity : AppCompatActivity() {
 					} else {
 						var fc = config!!.files[it.absolutePath]
 						if (fc!!.totalLength != it.length()) {
-							var fc = FileConfig()
+							var fc = FileSummary()
 							fc.initialized = false
 							fc.path = it.absolutePath
 							fc.name = it.nameWithoutExtension
@@ -163,7 +183,7 @@ class MainActivity : AppCompatActivity() {
 		timer.schedule(object : TimerTask() {
 			override fun run() {
 				runOnUiThread {
-					showSearchFile(scanFile[0].substring(rootPathLength))
+					showSearchFile(getScanFile().substring(rootPathLength))
 				}
 			}
 		}, 0, 50)
@@ -196,19 +216,26 @@ class MainActivity : AppCompatActivity() {
 	private fun showFiles() {
 		loadingBar?.visibility = GONE
 		if (config!!.files.isEmpty()) {
-			listView?.visibility = GONE
+			fileList?.visibility = GONE
 			searchButton?.visibility = VISIBLE
 		} else {
-			listView?.visibility = VISIBLE
+			fileList?.visibility = VISIBLE
 			searchButton?.visibility = GONE
 
-			var list = mutableListOf<FileConfig>()
+			var list = mutableListOf<FileSummary>()
 			if (config != null) {
 				for (m in config!!.files.entries) {
 					list.add(m.value)
 				}
 			}
-			listView?.adapter = BookListAdapter(this, list)
+
+			list.sortBy {
+				it.lastReadTime
+			}
+
+			bookAdapter?.close()
+			bookAdapter?.update(list)
+
 		}
 	}
 

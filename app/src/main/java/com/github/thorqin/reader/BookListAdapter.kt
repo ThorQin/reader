@@ -6,29 +6,72 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.TextView
+import com.chauthai.swipereveallayout.SwipeRevealLayout
 
 class BookListAdapter(
-	private val context: Context,
-	private val data: List<FileConfig>
+	context: Context,
+	private val onDeleteItem: (path: String) -> Unit
 ) : BaseAdapter() {
 
-	val inflater: LayoutInflater = LayoutInflater.from(context)
+	private var openedView: SwipeRevealLayout? = null
+	private val listener = object:SwipeRevealLayout.SwipeListener {
+		override fun onClosed(view: SwipeRevealLayout?) {
+			if (openedView == view) {
+				openedView = null
+			}
+		}
+
+		override fun onSlide(view: SwipeRevealLayout?, slideOffset: Float) {
+
+		}
+
+		override fun onOpened(view: SwipeRevealLayout?) {
+			if (openedView != null && openedView != view) {
+				openedView!!.close(true)
+			}
+			openedView = view
+		}
+	}
+	private var data: List<FileSummary>? = null
+	private val inflater: LayoutInflater = LayoutInflater.from(context)
+
+	fun update(data: List<FileSummary>) {
+		this.data = data
+		this.notifyDataSetChanged()
+	}
+
+	fun close() {
+		if (openedView != null) {
+			openedView!!.close(false)
+		}
+	}
 
 	override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-		if (convertView != null && convertView.tag == position) {
-			return convertView
+		var view: SwipeRevealLayout = if (convertView != null) {
+			if (convertView.tag == data!![position].path) {
+				return convertView as SwipeRevealLayout
+			} else {
+				convertView as SwipeRevealLayout
+			}
+		} else {
+			inflater.inflate(R.layout.book_item, null) as SwipeRevealLayout
 		}
-		val view = inflater.inflate(R.layout.book_item, null)
+		view.close(false)
+		view.setSwipeListener(listener)
 		val nameText = view.findViewById(R.id.book_name) as TextView
-		nameText.text = data[position].name
+		nameText.text = data!![position].name
 		val descText = view.findViewById(R.id.reading_progress) as TextView
-		descText.text = data[position].desc
-		view.tag = position
+		descText.text = data!![position].desc
+		val btnDelete = view.findViewById(R.id.delete_book) as View
+		btnDelete.setOnClickListener {
+			onDeleteItem(data!![position].path)
+		}
+		view.tag = data!![position].path
 		return view
 	}
 
 	override fun getItem(position: Int): Any {
-		return data[position]
+		return data!![position]
 	}
 
 	override fun getItemId(position: Int): Long {
@@ -36,7 +79,10 @@ class BookListAdapter(
 	}
 
 	override fun getCount(): Int {
-		return data.size
+		if (data == null) {
+			return 0
+		}
+		return data!!.size
 	}
 
 }

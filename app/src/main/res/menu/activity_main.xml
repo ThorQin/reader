@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    >
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <item
-        android:id="@+id/search_book"
-        android:actionLayout="@layout/activity_main"
-        android:enabled="true"
-        android:icon="@drawable/ic_search_white_24dp"
-        android:title="@string/search_book"
-        app:showAsAction="ifRoom|withText" />
+	<item
+		android:id="@+id/search_book"
+		android:actionLayout="@layout/activity_main"
+		android:enabled="true"
+		android:icon="@drawable/ic_search_white_24dp"
+		android:title="@string/search_book"
+		app:showAsAction="ifRoom|withText" />
+
+	<item
+		android:id="@+id/empty_book"
+		android:actionLayout="@layout/activity_main"
+		android:enabled="true"
+		android:title="@string/clear_book"
+		app:showAsAction="withText" />
 </menu>

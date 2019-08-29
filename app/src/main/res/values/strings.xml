@@ -1,5 +1,10 @@
 <resources>
-    <string name="app_name">轻阅读</string>
-    <string name="search_book">搜索图书</string>
+	<string name="app_name">轻阅读</string>
+	<string name="search_book">搜索图书</string>
 	<string name="no_book">没有图书 点击搜索</string>
+	<string name="clear_book">清空书架</string>
+
+	<string name="title_activity_launch_screen">LaunchScreenActivity</string>
+	<string name="dummy_button">Dummy Button</string>
+	<string name="dummy_content">DUMMY\nCONTENT</string>
 </resources>
