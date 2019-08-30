@@ -6,6 +6,6 @@
 	<color name="colorWorkspace">#555555</color>
 	<color name="colorBlack">#000000</color>
 	<color name="colorWhite">#FFFFFF</color>
-	<color name="translucentBackground">#80000000</color>
+	<color name="translucentBackground">#00000000</color>
 	<color name="black_overlay">#66000000</color>
 </resources>

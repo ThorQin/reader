@@ -1,20 +1,26 @@
-package com.github.thorqin.reader
+package com.github.thorqin.reader.main
 
 import android.content.Context
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.TextView
 import com.chauthai.swipereveallayout.SwipeRevealLayout
+import com.github.thorqin.reader.R
+import com.github.thorqin.reader.entity.FileSummary
+
+
+
 
 class BookListAdapter(
-	context: Context,
+	val context: Context,
 	private val onDeleteItem: (path: String) -> Unit
 ) : BaseAdapter() {
 
 	private var openedView: SwipeRevealLayout? = null
-	private val listener = object:SwipeRevealLayout.SwipeListener {
+	private val swipeListener = object:SwipeRevealLayout.SwipeListener {
 		override fun onClosed(view: SwipeRevealLayout?) {
 			if (openedView == view) {
 				openedView = null
@@ -31,6 +37,9 @@ class BookListAdapter(
 			}
 			openedView = view
 		}
+	}
+	private val clickListener = View.OnClickListener {
+		context.startActivity(Intent(context, Main2Activity::class.java))
 	}
 	private var data: List<FileSummary>? = null
 	private val inflater: LayoutInflater = LayoutInflater.from(context)
@@ -57,7 +66,9 @@ class BookListAdapter(
 			inflater.inflate(R.layout.book_item, null) as SwipeRevealLayout
 		}
 		view.close(false)
-		view.setSwipeListener(listener)
+		view.setSwipeListener(swipeListener)
+		val bookItem = view.findViewById(R.id.bookItem) as View
+		bookItem.setOnClickListener(clickListener)
 		val nameText = view.findViewById(R.id.book_name) as TextView
 		nameText.text = data!![position].name
 		val descText = view.findViewById(R.id.reading_progress) as TextView

@@ -8,12 +8,12 @@
 		android:enabled="true"
 		android:icon="@drawable/ic_search_white_24dp"
 		android:title="@string/search_book"
-		app:showAsAction="ifRoom|withText" />
+		android:showAsAction="ifRoom|withText" />
 
 	<item
 		android:id="@+id/empty_book"
 		android:actionLayout="@layout/activity_main"
 		android:enabled="true"
 		android:title="@string/clear_book"
-		app:showAsAction="withText" />
+		android:showAsAction="withText" />
 </menu>

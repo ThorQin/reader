@@ -1,7 +1,6 @@
-package com.github.thorqin.reader
+package com.github.thorqin.reader.main
 
 import android.Manifest
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -9,31 +8,47 @@ import android.os.*
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Window
-
-import com.google.gson.Gson
-
-import org.apache.commons.io.FileUtils
-import java.lang.Exception
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import com.github.thorqin.reader.App
+import com.github.thorqin.reader.R
+import com.github.thorqin.reader.entity.FileSummary
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
 
-var TEXT_FILE = Regex(".+\\.txt$", RegexOption.IGNORE_CASE)
-
-const val MIN_FILE_SIZE = 1024 * 200
 
 class MainActivity : AppCompatActivity() {
 
-	private var config: AppConfig? = null
+	companion object {
+		val TEXT_FILE = Regex(".+\\.txt$", RegexOption.IGNORE_CASE)
+		const val MIN_FILE_SIZE = 1024 * 200
+
+	}
+
+	private val app: App get () {
+		return application as App
+	}
+
 	private var searching = false
-	private var scanFile = arrayOf("")
-	private var bookAdapter: BookListAdapter? = null
+	private val scanFile = arrayOf("")
+	private var _adapter: BookListAdapter? = null
+	private val bookAdapter: BookListAdapter get () {
+		return if (_adapter != null) {
+			_adapter as BookListAdapter
+		} else {
+			_adapter = BookListAdapter(this) {
+				app.config.files.remove(it)
+				app.saveConfig()
+				showFiles()
+			}
+			_adapter as BookListAdapter
+		}
+	}
 
 	private fun setScanFile(f: String) {
 		synchronized(scanFile) {
@@ -48,45 +63,20 @@ class MainActivity : AppCompatActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+
 		requestWindowFeature(Window.FEATURE_NO_TITLE)
 
 		setContentView(R.layout.activity_main)
 
-		bookAdapter = BookListAdapter(this) {
-			config!!.files.remove(it)
-			saveConfig()
-			showFiles()
-		}
-
-		searchButton!!.setOnClickListener {
+		searchButton.setOnClickListener {
 			searchBooks()
 		}
 
-		fileList?.adapter = bookAdapter
+		fileList.adapter = bookAdapter
 
-		config = try {
-
-			val configContent = FileUtils.readFileToString(
-				application.filesDir.resolve("config.json"), "utf-8"
-			)
-			val gson = Gson()
-			gson.fromJson(configContent, AppConfig::class.java)
-
-		} catch (e: Exception) {
-			AppConfig()
-		}
 		showFiles()
-		this.setTheme(R.style.MainActivityTheme)
-	}
 
-	private fun saveConfig() {
-		try {
-			val gson = Gson()
-			val content = gson.toJson(config)
-			FileUtils.writeStringToFile(application.filesDir.resolve("config.json"), content, "utf-8")
-		} catch (e: Exception) {
-			System.err.println("Save config failed: " + e.message)
-		}
+		this.setTheme(R.style.MainActivityTheme)
 	}
 
 	override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -102,8 +92,8 @@ class MainActivity : AppCompatActivity() {
 				true
 			}
 			R.id.empty_book -> {
-				config?.files?.clear()
-				saveConfig()
+				app.config.files.clear()
+				app.saveConfig()
 				showFiles()
 				true
 			}
@@ -129,18 +119,18 @@ class MainActivity : AppCompatActivity() {
 	private fun searchBooksInternal() {
 		if (searching) return
 		searching = true
-		fileList?.visibility = GONE
-		searchButton?.visibility = GONE
-		loadingBar?.visibility = VISIBLE
+		fileList.visibility = GONE
+		searchButton.visibility = GONE
+		loadingBar.visibility = VISIBLE
 
 
 		var rootPathLength = 0
-		var timer = Timer()
-		var thread = Thread {
+		val timer = Timer()
+		val thread = Thread {
 			try {
-				config!!.files.forEach {
+				app.config.files.forEach {
 					if (!File(it.key).exists()) {
-						config!!.files.remove(it.key)
+						app.config.files.remove(it.key)
 					}
 				}
 
@@ -151,26 +141,26 @@ class MainActivity : AppCompatActivity() {
 					searchPath(p, found, 0)
 				}
 				found.forEach {
-					if (!config!!.files.containsKey(it.absolutePath)) {
-						var fc = FileSummary()
+					var fc = app.config.files[it.absolutePath]
+					if (fc == null) {
+						fc = FileSummary()
 						fc.initialized = false
 						fc.path = it.absolutePath
 						fc.name = it.nameWithoutExtension
 						fc.totalLength = it.length()
-						config!!.files[it.absolutePath] = fc
+						app.config.files[it.absolutePath] = fc
 					} else {
-						var fc = config!!.files[it.absolutePath]
-						if (fc!!.totalLength != it.length()) {
-							var fc = FileSummary()
+						if (fc.totalLength != it.length()) {
+							fc = FileSummary()
 							fc.initialized = false
 							fc.path = it.absolutePath
 							fc.name = it.nameWithoutExtension
 							fc.totalLength = it.length()
-							config!!.files[it.absolutePath] = fc
+							app.config.files[it.absolutePath] = fc
 						}
 					}
 				}
-				saveConfig()
+				app.saveConfig()
 			} finally {
 				timer.cancel()
 				searching = false
@@ -214,34 +204,30 @@ class MainActivity : AppCompatActivity() {
 	}
 
 	private fun showFiles() {
-		loadingBar?.visibility = GONE
-		if (config!!.files.isEmpty()) {
-			fileList?.visibility = GONE
-			searchButton?.visibility = VISIBLE
+		loadingBar.visibility = GONE
+		if (app.config.files.isEmpty()) {
+			fileList.visibility = GONE
+			searchButton.visibility = VISIBLE
 		} else {
-			fileList?.visibility = VISIBLE
-			searchButton?.visibility = GONE
-
-			var list = mutableListOf<FileSummary>()
-			if (config != null) {
-				for (m in config!!.files.entries) {
-					list.add(m.value)
-				}
+			fileList.visibility = VISIBLE
+			searchButton.visibility = GONE
+			val list = mutableListOf<FileSummary>()
+			for (m in app.config.files.entries) {
+				list.add(m.value)
 			}
-
 			list.sortBy {
 				it.lastReadTime
 			}
 
-			bookAdapter?.close()
-			bookAdapter?.update(list)
+			bookAdapter.close()
+			bookAdapter.update(list)
 
 		}
 	}
 
 	private fun showSearchFile(file: String?) {
 		if (file != null)
-			loadingStatus?.text = file
+			loadingStatus.text = file
 	}
 
 	override fun onRequestPermissionsResult(
@@ -264,15 +250,15 @@ class MainActivity : AppCompatActivity() {
 		}
 	}
 
-	fun showOpenAppSetting() {
+	private fun showOpenAppSetting() {
 		AlertDialog.Builder(this).setTitle("存储权限不可用")
 			.setMessage("请在-应用设置-权限-中，允许读取存储权限来查找和打开图书")
-			.setPositiveButton("立即开启") { _: DialogInterface, _: Int ->
+			.setPositiveButton("立即开启") { _, _ ->
 				openSetting()
 			}.setCancelable(true).show()
 	}
 
-	fun openSetting() {
+	private fun openSetting() {
 		var intent = Intent()
 		intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 		var uri = Uri.fromParts("package", packageName, null)
