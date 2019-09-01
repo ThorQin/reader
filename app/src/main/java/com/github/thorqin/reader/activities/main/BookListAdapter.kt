@@ -1,4 +1,4 @@
-package com.github.thorqin.reader.main
+package com.github.thorqin.reader.activities.main
 
 import android.content.Context
 import android.content.Intent
@@ -8,10 +8,10 @@ import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.TextView
 import com.chauthai.swipereveallayout.SwipeRevealLayout
+import com.github.thorqin.reader.App
 import com.github.thorqin.reader.R
-import com.github.thorqin.reader.entity.FileSummary
-
-
+import com.github.thorqin.reader.activities.book.BookActivity
+import androidx.core.app.ActivityOptionsCompat
 
 
 class BookListAdapter(
@@ -39,12 +39,14 @@ class BookListAdapter(
 		}
 	}
 	private val clickListener = View.OnClickListener {
-		context.startActivity(Intent(context, Main2Activity::class.java))
+		context as MainActivity
+		context.startActivity(Intent(context, BookActivity::class.java))
+//		context.overridePendingTransition(R.anim.right_in,R.anim.left_out)
 	}
-	private var data: List<FileSummary>? = null
+	private var data: List<App.FileSummary>? = null
 	private val inflater: LayoutInflater = LayoutInflater.from(context)
 
-	fun update(data: List<FileSummary>) {
+	fun update(data: List<App.FileSummary>) {
 		this.data = data
 		this.notifyDataSetChanged()
 	}

@@ -1,4 +1,4 @@
-package com.github.thorqin.reader.main
+package com.github.thorqin.reader.activities.main
 
 import android.Manifest
 import android.content.Intent
@@ -15,7 +15,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.R
-import com.github.thorqin.reader.entity.FileSummary
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.util.*
@@ -36,19 +35,7 @@ class MainActivity : AppCompatActivity() {
 
 	private var searching = false
 	private val scanFile = arrayOf("")
-	private var _adapter: BookListAdapter? = null
-	private val bookAdapter: BookListAdapter get () {
-		return if (_adapter != null) {
-			_adapter as BookListAdapter
-		} else {
-			_adapter = BookListAdapter(this) {
-				app.config.files.remove(it)
-				app.saveConfig()
-				showFiles()
-			}
-			_adapter as BookListAdapter
-		}
-	}
+	private lateinit var bookAdapter: BookListAdapter
 
 	private fun setScanFile(f: String) {
 		synchronized(scanFile) {
@@ -61,22 +48,29 @@ class MainActivity : AppCompatActivity() {
 		}
 	}
 
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 
 		requestWindowFeature(Window.FEATURE_NO_TITLE)
-
 		setContentView(R.layout.activity_main)
+		setSupportActionBar(toolbar)
 
 		searchButton.setOnClickListener {
 			searchBooks()
+		}
+
+		bookAdapter = BookListAdapter(this) {
+			app.config.files.remove(it)
+			app.saveConfig()
+			showFiles()
 		}
 
 		fileList.adapter = bookAdapter
 
 		showFiles()
 
-		this.setTheme(R.style.MainActivityTheme)
+//		this.setTheme(R.style.MainActivityTheme)
 	}
 
 	override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -120,7 +114,7 @@ class MainActivity : AppCompatActivity() {
 		if (searching) return
 		searching = true
 		fileList.visibility = GONE
-		searchButton.visibility = GONE
+		buttonBar.visibility = GONE
 		loadingBar.visibility = VISIBLE
 
 
@@ -143,7 +137,7 @@ class MainActivity : AppCompatActivity() {
 				found.forEach {
 					var fc = app.config.files[it.absolutePath]
 					if (fc == null) {
-						fc = FileSummary()
+						fc = App.FileSummary()
 						fc.initialized = false
 						fc.path = it.absolutePath
 						fc.name = it.nameWithoutExtension
@@ -151,7 +145,7 @@ class MainActivity : AppCompatActivity() {
 						app.config.files[it.absolutePath] = fc
 					} else {
 						if (fc.totalLength != it.length()) {
-							fc = FileSummary()
+							fc = App.FileSummary()
 							fc.initialized = false
 							fc.path = it.absolutePath
 							fc.name = it.nameWithoutExtension
@@ -173,7 +167,9 @@ class MainActivity : AppCompatActivity() {
 		timer.schedule(object : TimerTask() {
 			override fun run() {
 				runOnUiThread {
-					showSearchFile(getScanFile().substring(rootPathLength))
+					val file = getScanFile().substring(rootPathLength)
+					if (file != null)
+						loadingStatus.text = file
 				}
 			}
 		}, 0, 50)
@@ -207,11 +203,11 @@ class MainActivity : AppCompatActivity() {
 		loadingBar.visibility = GONE
 		if (app.config.files.isEmpty()) {
 			fileList.visibility = GONE
-			searchButton.visibility = VISIBLE
+			buttonBar.visibility = VISIBLE
 		} else {
 			fileList.visibility = VISIBLE
-			searchButton.visibility = GONE
-			val list = mutableListOf<FileSummary>()
+			buttonBar.visibility = GONE
+			val list = mutableListOf<App.FileSummary>()
 			for (m in app.config.files.entries) {
 				list.add(m.value)
 			}
@@ -223,11 +219,6 @@ class MainActivity : AppCompatActivity() {
 			bookAdapter.update(list)
 
 		}
-	}
-
-	private fun showSearchFile(file: String?) {
-		if (file != null)
-			loadingStatus.text = file
 	}
 
 	override fun onRequestPermissionsResult(
