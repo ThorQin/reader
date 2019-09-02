@@ -22,23 +22,23 @@ class App : Application() {
 
 	class FileDetail {
 		var chapters = ArrayList<Chapter>()
-		var totalChapters = 0UL
-		var readChapter = 0UL
-		var totalPages = 0UL
-		var readPage = 0UL
-		var readPageOfChapter = 0UL
+		var totalChapters = 0L
+		var readChapter = 0L
+		var totalPages = 0L
+		var readPage = 0L
+		var readPageOfChapter = 0L
 	}
 
 	class FileSummary {
 		var path = ""
 		var initialized = false
 		var name = ""
-		var totalLength = 0UL
-		var readPoint = 0UL
+		var totalLength = 0L
+		var readPoint = 0L
 		var lastReadTime: Long? = null
 		val desc: String get() {
-			var p = if (totalLength > 0UL) {
-				floor(readPoint.toDouble() / ((totalLength * 100UL) as Long) ).toInt()} else {0}
+			var p = if (totalLength > 0L) {
+				floor(readPoint.toDouble() / (totalLength * 100L) ).toInt()} else {0}
 			return "大小：" + ((totalLength.toDouble() / 1024 / 1024 * 100).roundToInt() / 100.0) + "M  阅读：" + p + "%"
 		}
 	}

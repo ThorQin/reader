@@ -12,6 +12,7 @@ import com.github.thorqin.reader.App
 import com.github.thorqin.reader.R
 import com.github.thorqin.reader.activities.book.BookActivity
 import androidx.core.app.ActivityOptionsCompat
+import java.io.File
 
 
 class BookListAdapter(
@@ -40,7 +41,16 @@ class BookListAdapter(
 	}
 	private val clickListener = View.OnClickListener {
 		context as MainActivity
-		context.startActivity(Intent(context, BookActivity::class.java))
+		val filePath = it.tag as String
+		if (!File(filePath).exists()) {
+			App.askbox(context, "文件不存在，是否从列表移除？", null) {
+				onDeleteItem(filePath)
+			}
+			return@OnClickListener
+		}
+		val intent = Intent(context, BookActivity::class.java)
+		intent.putExtra("key", it.tag as String)
+		context.startActivity(intent)
 //		context.overridePendingTransition(R.anim.right_in,R.anim.left_out)
 	}
 	private var data: List<App.FileSummary>? = null

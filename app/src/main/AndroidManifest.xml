@@ -16,6 +16,7 @@
 		tools:ignore="GoogleAppIndexingWarning">
 		<activity android:name=".activities.start.LaunchScreenActivity"
 			android:theme="@style/TranslucentTheme">
+
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 
@@ -26,13 +27,14 @@
 
 		<activity
 			android:name=".activities.book.BookActivity"
-			android:label="@string/title_activity_book"
+			android:label=""
 			android:theme="@style/BookActivityTheme" />
 
 
 		<activity
 			android:name=".activities.main.MainActivity"
 			android:theme="@style/MainActivityTheme">
+
 		</activity>
 	</application>
 

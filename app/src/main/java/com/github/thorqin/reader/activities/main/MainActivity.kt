@@ -34,18 +34,20 @@ class MainActivity : AppCompatActivity() {
 	}
 
 	private var searching = false
-	private val scanFile = arrayOf("")
+	private var scanFile: String = ""
 	private lateinit var bookAdapter: BookListAdapter
 
 	private fun setScanFile(f: String) {
 		synchronized(scanFile) {
-			scanFile[0] = f
+			scanFile = f
 		}
 	}
 	private fun getScanFile(): String {
+		var result: String? = null
 		synchronized(scanFile) {
-			return scanFile[0]
+			result = scanFile
 		}
+		return result as String
 	}
 
 
@@ -69,8 +71,6 @@ class MainActivity : AppCompatActivity() {
 		fileList.adapter = bookAdapter
 
 		showFiles()
-
-//		this.setTheme(R.style.MainActivityTheme)
 	}
 
 	override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -167,8 +167,9 @@ class MainActivity : AppCompatActivity() {
 		timer.schedule(object : TimerTask() {
 			override fun run() {
 				runOnUiThread {
-					val file = getScanFile().substring(rootPathLength)
-					if (file != null)
+					var file = getScanFile()
+					if (file != null && file.length > rootPathLength)
+						file = file.substring(rootPathLength)
 						loadingStatus.text = file
 				}
 			}
