@@ -19,6 +19,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
+import java.text.Collator
 
 
 class MainActivity : AppCompatActivity() {
@@ -43,11 +44,11 @@ class MainActivity : AppCompatActivity() {
 		}
 	}
 	private fun getScanFile(): String {
-		var result: String? = null
+		lateinit var result: String
 		synchronized(scanFile) {
 			result = scanFile
 		}
-		return result as String
+		return result
 	}
 
 
@@ -63,8 +64,7 @@ class MainActivity : AppCompatActivity() {
 		}
 
 		bookAdapter = BookListAdapter(this) {
-			app.config.files.remove(it)
-			app.saveConfig()
+			app.removeBook(it)
 			showFiles()
 		}
 
@@ -86,8 +86,7 @@ class MainActivity : AppCompatActivity() {
 				true
 			}
 			R.id.empty_book -> {
-				app.config.files.clear()
-				app.saveConfig()
+				app.clearBook()
 				showFiles()
 				true
 			}
@@ -135,22 +134,23 @@ class MainActivity : AppCompatActivity() {
 					searchPath(p, found, 0)
 				}
 				found.forEach {
-					var fc = app.config.files[it.absolutePath]
+					val key = App.digest(it.absolutePath)
+					var fc = app.config.files[key]
 					if (fc == null) {
 						fc = App.FileSummary()
-						fc.initialized = false
+						fc.key = key
 						fc.path = it.absolutePath
 						fc.name = it.nameWithoutExtension
 						fc.totalLength = it.length()
-						app.config.files[it.absolutePath] = fc
+						app.config.files[key] = fc
 					} else {
 						if (fc.totalLength != it.length()) {
+							app.removeBook(key)
 							fc = App.FileSummary()
-							fc.initialized = false
 							fc.path = it.absolutePath
 							fc.name = it.nameWithoutExtension
 							fc.totalLength = it.length()
-							app.config.files[it.absolutePath] = fc
+							app.config.files[key] = fc
 						}
 					}
 				}
@@ -168,7 +168,7 @@ class MainActivity : AppCompatActivity() {
 			override fun run() {
 				runOnUiThread {
 					var file = getScanFile()
-					if (file != null && file.length > rootPathLength)
+					if (file.length > rootPathLength)
 						file = file.substring(rootPathLength)
 						loadingStatus.text = file
 				}
@@ -212,10 +212,18 @@ class MainActivity : AppCompatActivity() {
 			for (m in app.config.files.entries) {
 				list.add(m.value)
 			}
-			list.sortBy {
-				it.lastReadTime
-			}
-
+			list.sortWith(Comparator { o1, o2 ->
+				val t1 = if (o1.lastReadTime == null) 0L else o1.lastReadTime as Long
+				val t2 = if (o2.lastReadTime == null) 0L else o2.lastReadTime as Long
+				when {
+						t1 == t2 -> {
+							val com = Collator.getInstance(Locale.CHINA)
+							com.compare(o1.name, o2.name)
+						}
+						t1 > t2 -> -1
+						else -> 1
+				}
+			})
 			bookAdapter.close()
 			bookAdapter.update(list)
 
@@ -243,9 +251,9 @@ class MainActivity : AppCompatActivity() {
 	}
 
 	private fun showOpenAppSetting() {
-		AlertDialog.Builder(this).setTitle("存储权限不可用")
-			.setMessage("请在-应用设置-权限-中，允许读取存储权限来查找和打开图书")
-			.setPositiveButton("立即开启") { _, _ ->
+		AlertDialog.Builder(this).setTitle(getString(R.string.no_storage_permission))
+			.setMessage(getString(R.string.should_allow_permission))
+			.setPositiveButton(getString(R.string.open_now)) { _, _ ->
 				openSetting()
 			}.setCancelable(true).show()
 	}

@@ -9,7 +9,14 @@ import androidx.appcompat.app.AppCompatActivity
 import com.github.thorqin.reader.R
 import kotlinx.android.synthetic.main.activity_book.*
 import android.animation.ObjectAnimator
+import android.widget.Toast
 import com.github.thorqin.reader.App
+import com.google.gson.Gson
+import org.apache.commons.io.FileUtils
+import java.io.File
+import java.lang.Exception
+import java.nio.charset.Charset
+import java.util.*
 
 
 class BookActivity : AppCompatActivity() {
@@ -19,12 +26,13 @@ class BookActivity : AppCompatActivity() {
 		RIGHT(1)
 	}
 
+	private lateinit var summary: App.FileSummary
+	private lateinit var fileInfo: App.FileDetail
 	private var boxWidth: Float = 0F
 	private var startX : Float? = null
 	private var viewX: Float? = null
 	private var v: View? = null
 	private var moveDirection: Direction = Direction.LEFT
-
 
 	private val app: App
 		get () {
@@ -33,14 +41,24 @@ class BookActivity : AppCompatActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+
+		val key = intent.getStringExtra("key")
+		if (!app.config.files.containsKey(key)) {
+			app.toast(getString(R.string.invalid_config))
+			finish()
+			return
+		}
+		summary = app.config.files[key] as App.FileSummary
+
 		setContentView(R.layout.activity_book)
 		setSupportActionBar(toolbar)
 		supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-		flipper.addOnLayoutChangeListener {
+		bufferView.addOnLayoutChangeListener {
 			v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
 			boxWidth = flipper.measuredWidth.toFloat()
 			println("boxWidth: $boxWidth")
+			initBook()
 			setPos()
 		}
 
@@ -160,13 +178,151 @@ class BookActivity : AppCompatActivity() {
 		flipper.getChildAt(0).translationX = 0f
 	}
 
+	private fun showContent() {
+
+	}
+
 	private fun openBook() {
-		val key = intent.getStringExtra("key")
-		val fileInfo = app.config.files[key] as App.FileSummary
-		if (fileInfo.initialized) {
+		try {
+			summary.lastReadTime = Date().time
+			fileInfo = app.getFileConfig(summary.key)
+			showContent()
+		} catch (e: Exception) {
+			System.err.println("打开索引失败，需要重新初始化: $e")
+			e.printStackTrace()
+		}
+	}
 
-		} else {
+	private fun parseFile(file: File): App.FileDetail {
 
+		lateinit var charset: String
+		file.inputStream().use {
+			// Firstly we should detect file encoding
+			charset = App.detectCharset(it)
+		}
+
+		file.reader(Charset.forName(charset)).use {
+			var buffer = CharArray(8192)
+			var line = StringBuilder(8192)
+			var content = StringBuilder(8192)
+			var lineStart = 0L
+			var lineSize = 0L
+			var scan = 0L
+			var lineEnd = true
+			var beginChapter = true
+			var fileInfo: App.FileDetail = App.FileDetail()
+			fileInfo.encoding = charset
+			fileInfo.fontSize = app.config.fontSize
+
+			var chapter = App.Chapter()
+
+			fun testEnd(c: Char?) {
+				if (!beginChapter) {
+					if (lineSize in 1..50) {
+						// match line content
+						if (false) { //TODO: CHANGE TO MATCH LOGIC
+							chapter.endPoint = lineStart
+							parseChapter(fileInfo, chapter, content.toString())
+							chapter = App.Chapter()
+							chapter.name = line.toString()
+							beginChapter = true
+							content.clear()
+							line.clear()
+						} else if (c != null) {
+							content.append(c)
+							lineSize = 0
+							line.clear()
+						} else {
+							chapter.endPoint = scan
+							parseChapter(fileInfo, chapter, content.toString())
+						}
+					} else if (c != null) {
+						content.append(c)
+						lineSize = 0
+						line.clear()
+					} else {
+						chapter.endPoint = scan
+						parseChapter(fileInfo, chapter, content.toString())
+					}
+				}
+			}
+
+
+			while(true) {
+				var size = it.read(buffer, 0, 8192)
+				if (size <= 0) {
+					break
+				}
+				for (i in 0 until size) {
+					val c = buffer[i]
+					if (c == '\n' || c == '\r') {
+						lineEnd = true
+						testEnd(c)
+					} else {
+						if (beginChapter) {
+							chapter.startPoint = scan
+							beginChapter = false
+						}
+						content.append(c)
+						if (lineEnd) {
+							lineEnd = false
+							lineStart = scan
+						}
+						lineSize++
+						if (lineSize < 50) {
+							line.append(c)
+						}
+					}
+					scan++
+				}
+			}
+			testEnd(null)
+
+			for (i in 0 until fileInfo.chapters.size) {
+				fileInfo.totalPages += fileInfo.chapters[i].pages.size
+			}
+
+			return fileInfo
+
+		}
+	}
+
+	private fun parseChapter(fileInfo: App.FileDetail, chapter: App.Chapter, content: String) {
+		if (content.isEmpty() && chapter.name.isEmpty()) {
+			return
+		}
+		var offset = 0
+		while (offset < content.length) {
+			if (offset == 861954) {
+				println("begin debug")
+			}
+			val pageSize = bufferView.calcPageEnd(content, offset, content.length)
+			if (pageSize > 0) {
+				if (pageSize > 10000) {
+					println("offset: $offset, pageSize: $pageSize")
+				}
+				chapter.pages.add(pageSize)
+				offset += pageSize
+			} else {
+				break
+			}
+		}
+		fileInfo.chapters.add(chapter)
+	}
+
+	private fun initBook() {
+		bufferView.textSize = app.config.fontSize.toFloat()
+		try {
+			var file = File(summary.path)
+			fileInfo = parseFile(file)
+			summary.lastReadTime = Date().time
+			app.config.lastRead = summary.key
+			app.saveFileConfig(fileInfo, summary.key)
+			app.saveConfig()
+			showContent()
+		} catch (e: Exception) {
+			System.err.println("Error: $e")
+			app.toast(getString(R.string.cannot_init_book))
 		}
 	}
 

@@ -22,26 +22,25 @@
 
 	</com.google.android.material.appbar.AppBarLayout>
 
-	<TextView
-		android:id="@+id/buffer"
-		android:visibility="invisible"
+	<com.github.thorqin.reader.activities.book.BookView
+		android:id="@+id/bufferView"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent" />
+		android:layout_height="match_parent"/>
 
 	<FrameLayout
 		android:id="@+id/flipper"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent">
 
-		<TextView
+		<com.github.thorqin.reader.activities.book.BookView
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"/>
 
-		<TextView
+		<com.github.thorqin.reader.activities.book.BookView
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"/>
 
-		<TextView
+		<com.github.thorqin.reader.activities.book.BookView
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"/>
 

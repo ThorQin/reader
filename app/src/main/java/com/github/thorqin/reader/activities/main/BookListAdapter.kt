@@ -11,13 +11,12 @@ import com.chauthai.swipereveallayout.SwipeRevealLayout
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.R
 import com.github.thorqin.reader.activities.book.BookActivity
-import androidx.core.app.ActivityOptionsCompat
 import java.io.File
 
 
 class BookListAdapter(
 	val context: Context,
-	private val onDeleteItem: (path: String) -> Unit
+	private val onDeleteItem: (key: String) -> Unit
 ) : BaseAdapter() {
 
 	private var openedView: SwipeRevealLayout? = null
@@ -41,15 +40,16 @@ class BookListAdapter(
 	}
 	private val clickListener = View.OnClickListener {
 		context as MainActivity
-		val filePath = it.tag as String
-		if (!File(filePath).exists()) {
-			App.askbox(context, "文件不存在，是否从列表移除？", null) {
-				onDeleteItem(filePath)
+		val item = it.tag as App.FileSummary
+
+		if (!File(item.path).exists()) {
+			App.askbox(context, context.getString(R.string.file_not_exists), null) {
+				onDeleteItem(item.key)
 			}
 			return@OnClickListener
 		}
 		val intent = Intent(context, BookActivity::class.java)
-		intent.putExtra("key", it.tag as String)
+		intent.putExtra("key", item.key)
 		context.startActivity(intent)
 //		context.overridePendingTransition(R.anim.right_in,R.anim.left_out)
 	}
@@ -68,8 +68,9 @@ class BookListAdapter(
 	}
 
 	override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+		val item = data!![position]
 		var view: SwipeRevealLayout = if (convertView != null) {
-			if (convertView.tag == data!![position].path) {
+			if (convertView.tag == item.key) {
 				return convertView as SwipeRevealLayout
 			} else {
 				convertView as SwipeRevealLayout
@@ -80,16 +81,17 @@ class BookListAdapter(
 		view.close(false)
 		view.setSwipeListener(swipeListener)
 		val bookItem = view.findViewById(R.id.bookItem) as View
+		bookItem.tag = item
 		bookItem.setOnClickListener(clickListener)
 		val nameText = view.findViewById(R.id.book_name) as TextView
-		nameText.text = data!![position].name
+		nameText.text = item.name
 		val descText = view.findViewById(R.id.reading_progress) as TextView
-		descText.text = data!![position].desc
+		descText.text = item.desc
 		val btnDelete = view.findViewById(R.id.delete_book) as View
 		btnDelete.setOnClickListener {
-			onDeleteItem(data!![position].path)
+			onDeleteItem(item.key)
 		}
-		view.tag = data!![position].path
+		view.tag = item.key
 		return view
 	}
 
