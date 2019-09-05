@@ -2,11 +2,17 @@ package com.github.thorqin.reader.activities.book
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 import com.github.thorqin.reader.App
 import kotlin.math.floor
+import android.text.Layout
+import android.R.attr.data
+import android.text.StaticLayout
+
+
 
 class BookView : View {
 	constructor(context: Context): super(context)
@@ -53,8 +59,12 @@ class BookView : View {
 			return
 		}
 		val p = Paint()
+		p.isAntiAlias = true
+		p.color = Color.BLACK
+		p.strokeWidth = 2f
 		p.textSize =  App.dip2px(context, textSize).toFloat()
-		canvas.drawText(text, 0f, 0f, p)
+
+		canvas.drawText(text, 0f, 200f, p)
 	}
 
 

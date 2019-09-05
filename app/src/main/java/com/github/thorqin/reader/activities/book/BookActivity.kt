@@ -29,10 +29,8 @@ class BookActivity : AppCompatActivity() {
 	private lateinit var summary: App.FileSummary
 	private lateinit var fileInfo: App.FileDetail
 	private var boxWidth: Float = 0F
-	private var startX : Float? = null
-	private var viewX: Float? = null
-	private var v: View? = null
-	private var moveDirection: Direction = Direction.LEFT
+	private var atBegin = false
+	private var atEnd = false
 
 	private val app: App
 		get () {
@@ -58,10 +56,25 @@ class BookActivity : AppCompatActivity() {
 			v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
 			boxWidth = flipper.measuredWidth.toFloat()
 			println("boxWidth: $boxWidth")
-			initBook()
+			val newW = right - left
+			val newH = bottom - top
+			if (::fileInfo.isInitialized) {
+				if (fileInfo.screenWidth != newW && fileInfo.screenHeight != newH
+					&& newW != 0 && newH != 0) {
+					initBook(newW, newH)
+				}
+			} else {
+				if (newW != 0 && newH != 0) {
+					initBook(newW, newH)
+				}
+			}
 			setPos()
 		}
 
+		var v: View? = null
+		var startX : Float? = null
+		var viewX: Float? = null
+		var moveDirection: Direction = Direction.LEFT
 		flipper.setOnTouchListener { _, event ->
 			when (event.action ) {
 				MotionEvent.ACTION_DOWN -> {
@@ -71,14 +84,20 @@ class BookActivity : AppCompatActivity() {
 				MotionEvent.ACTION_MOVE -> {
 					if (startX != null) {
 						if (v == null) {
-							if (event.rawX > startX!! + 10f) {
-								moveDirection = Direction.RIGHT
-								v = flipper.getChildAt(2)
-							} else if (event.rawX < startX!! - 10f) {
-								moveDirection = Direction.LEFT
-								v = flipper.getChildAt(1)
+							if (event.rawX > startX!! && atBegin) {
+								true
+							} else if (event.rawX < startX!! && atEnd) {
+								true
+							} else {
+								if (event.rawX > startX!! + 10f) {
+									moveDirection = Direction.RIGHT
+									v = flipper.getChildAt(2)
+								} else if (event.rawX < startX!! - 10f) {
+									moveDirection = Direction.LEFT
+									v = flipper.getChildAt(1)
+								}
+								viewX = v?.translationX
 							}
-							viewX = v?.translationX
 						}
 						if (v != null) {
 							when (moveDirection) {
@@ -178,8 +197,77 @@ class BookActivity : AppCompatActivity() {
 		flipper.getChildAt(0).translationX = 0f
 	}
 
-	private fun showContent() {
+	private fun getPrevPageContent(): String? {
+		if (fileInfo.chapters.size == 0) {
+			return null
+		}
+		var p: Int
+		var c = fileInfo.readChapter
+		if (fileInfo.readPageOfChapter > 0) {
+			p = fileInfo.readPageOfChapter - 1
+		} else {
+			if (c > 0) {
+				c--
+				if (fileInfo.chapters[c].pages.size > 0) {
+					p = fileInfo.chapters[c].pages.size - 1
+				} else {
+					return null
+				}
+			} else {
+				return null
+			}
+		}
+		return fileInfo.getContent(c, p)
+	}
 
+	private fun getCurrentPageContent(): String {
+		return fileInfo.getContent(fileInfo.readChapter, fileInfo.readPageOfChapter)
+	}
+
+	private fun getNextPageContent(): String? {
+		if (fileInfo.chapters.size == 0) {
+			return null
+		}
+		var p: Int
+		var c = fileInfo.readChapter
+		if (fileInfo.readPageOfChapter < fileInfo.chapters[c].pages.size - 1) {
+			p = fileInfo.readPageOfChapter + 1
+		} else {
+			if (c < fileInfo.chapters.size - 1) {
+				c++
+				if (fileInfo.chapters[c].pages.size > 0) {
+					p = 0
+				} else {
+					return null
+				}
+			} else {
+				return null
+			}
+		}
+		return fileInfo.getContent(c, p)
+	}
+
+	private fun showContent() {
+		val prevView = flipper.getChildAt(2) as BookView
+		val currentView = flipper.getChildAt(1) as BookView
+		val nextView = flipper.getChildAt(0) as BookView
+
+		currentView.text = getCurrentPageContent()
+		val prevText = getPrevPageContent()
+		if (prevText == null) {
+			atBegin = true
+		} else {
+			atBegin = false
+			prevView.text = prevText
+		}
+
+		val nextText = getNextPageContent()
+		if (nextText == null) {
+			atEnd = true
+		} else {
+			atEnd = false
+			nextView.text = nextText
+		}
 	}
 
 	private fun openBook() {
@@ -293,15 +381,12 @@ class BookActivity : AppCompatActivity() {
 		}
 		var offset = 0
 		while (offset < content.length) {
-			if (offset == 861954) {
-				println("begin debug")
-			}
 			val pageSize = bufferView.calcPageEnd(content, offset, content.length)
 			if (pageSize > 0) {
-				if (pageSize > 10000) {
-					println("offset: $offset, pageSize: $pageSize")
-				}
-				chapter.pages.add(pageSize)
+				val page = App.Page()
+				page.start = chapter.startPoint + offset
+				page.length = pageSize
+				chapter.pages.add(page)
 				offset += pageSize
 			} else {
 				break
@@ -310,13 +395,18 @@ class BookActivity : AppCompatActivity() {
 		fileInfo.chapters.add(chapter)
 	}
 
-	private fun initBook() {
+	private fun initBook(width: Int, height: Int) {
 		bufferView.textSize = app.config.fontSize.toFloat()
 		try {
 			var file = File(summary.path)
 			fileInfo = parseFile(file)
 			summary.lastReadTime = Date().time
 			app.config.lastRead = summary.key
+			fileInfo.key = summary.key
+			fileInfo.name = summary.name
+			fileInfo.path = summary.path
+			fileInfo.screenWidth = width
+			fileInfo.screenHeight = height
 			app.saveFileConfig(fileInfo, summary.key)
 			app.saveConfig()
 			showContent()

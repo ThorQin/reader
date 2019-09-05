@@ -5,7 +5,9 @@ import android.app.AlertDialog
 import android.app.Application
 import android.content.Context
 import android.widget.Toast
-import com.google.gson.Gson
+import com.github.thorqin.reader.utils.Json
+import com.github.thorqin.reader.utils.Skip
+import com.github.thorqin.reader.utils.makeListType
 import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.IOException
@@ -16,24 +18,103 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 import kotlin.math.floor
 import kotlin.math.roundToInt
+
 class App : Application() {
 
+	class Page {
+		var start: Long = 0
+		var length: Int = 0
+	}
 
-	class Chapter {
+	class ChapterStore {
 		var name = ""
 		var pages = ArrayList<Int>()
 		var startPoint = 0L
 		var endPoint = 0L
 	}
 
-	class FileDetail {
+	class Chapter {
+		var name = ""
+		var pages = ArrayList<Page>()
+		var startPoint = 0L
+		var endPoint = 0L
+	}
+
+	open class FileState {
+		var key = ""
+		var name = ""
+		var path = ""
 		var encoding = "utf-8"
 		var fontSize = 14
+		var totalPages = 0
+		var readPage = 0
+		var readChapter = 0
+		var readPageOfChapter = 0
+		var screenWidth = 0
+		var screenHeight = 0
+	}
+
+	class FileDetail : FileState() {
+		@Skip
 		var chapters = ArrayList<Chapter>()
-		var totalPages = 0L
-		var readPage = 0L
-		var readChapter = 0L
-		var readPageOfChapter = 0L
+
+		var chapterJson: String
+			get() {
+				var chapterStore = arrayListOf<ChapterStore>()
+				for (i in 0 until chapters.size) {
+					val c = chapters[i]
+					val cs = ChapterStore()
+					cs.startPoint = c.startPoint
+					cs.endPoint = c.endPoint
+					cs.name = c.name
+					for (j in 0 until c.pages.size) {
+						cs.pages.add(c.pages[j].length)
+					}
+					chapterStore.add(cs)
+				}
+				return Json().toJson(chapterStore)
+			}
+			set(json) {
+				chapters.clear()
+				var store =
+					Json().fromJson(json, makeListType(ChapterStore::class.java)) as List<ChapterStore>
+				for (i in 0 until store.size) {
+					val cs = store[i]
+					val c = Chapter()
+					c.name = cs.name
+					c.startPoint = cs.startPoint
+					c.endPoint = cs.endPoint
+					var start = c.startPoint
+					for (j in 0 until cs.pages.size) {
+						val p = Page()
+						p.length = cs.pages[j]
+						p.start = start
+						start += p.length
+						c.pages.add(p)
+					}
+					chapters.add(c)
+				}
+			}
+
+		fun getContent(chapter: Int, page: Int): String {
+			var file = File(path)
+			if (chapters.size == 0 || chapter < 0 || chapter >= chapters.size) {
+				return ""
+			}
+			val chapter = chapters[chapter]
+			if (chapter.pages.size == 0 || page < 0 || page >= chapter.pages.size) {
+				return ""
+			}
+			val page = chapter.pages[page]
+			file.inputStream().use {
+				it.reader(Charset.forName(encoding)).use {
+					it.skip(page.start)
+					var buffer = CharArray(page.length)
+					it.read(buffer)
+					return String(buffer)
+				}
+			}
+		}
 	}
 
 	class FileSummary {
@@ -43,17 +124,23 @@ class App : Application() {
 		var totalLength = 0L
 		var readPoint = 0L
 		var lastReadTime: Long? = null
-		val desc: String get() {
-			var p = if (totalLength > 0L) {
-				floor(readPoint.toDouble() / (totalLength * 100L) ).toInt()} else {0}
-			return "大小：" + ((totalLength.toDouble() / 1024 / 1024 * 100).roundToInt() / 100.0) + "M  阅读：" + p + "%"
-		}
+		val desc: String
+			get() {
+				var p = if (totalLength > 0L) {
+					floor(readPoint.toDouble() / (totalLength * 100L)).toInt()
+				} else {
+					0
+				}
+				return "大小：" + ((totalLength.toDouble() / 1024 / 1024 * 100).roundToInt() / 100.0) + "M  阅读：" + p + "%"
+			}
 	}
 
 	class AppConfig {
 		var files = HashMap<String, FileSummary>()
 		var fontSize = 14
 		var lastRead: String? = null
+
+
 	}
 
 	companion object {
@@ -180,13 +267,12 @@ class App : Application() {
 		config = load()
 	}
 
-	private fun load() : AppConfig {
+	private fun load(): AppConfig {
 		return try {
 			val configContent = FileUtils.readFileToString(
 				filesDir.resolve("config.json"), "utf-8"
 			)
-			val gson = Gson()
-			gson.fromJson(configContent, AppConfig::class.java)
+			Json().fromJson(configContent, AppConfig::class.java)
 		} catch (e: Exception) {
 			AppConfig()
 		}
@@ -194,8 +280,7 @@ class App : Application() {
 
 	fun saveConfig() {
 		try {
-			val gson = Gson()
-			val content = gson.toJson(config)
+			val content = Json().toJson(config)
 			FileUtils.writeStringToFile(filesDir.resolve("config.json"), content, "utf-8")
 		} catch (e: Exception) {
 			System.err.println("Save config failed: ${e.message}")
@@ -203,11 +288,19 @@ class App : Application() {
 	}
 
 	fun getFileConfig(key: String): FileDetail {
-		val path = filesDir.resolve("books").resolve("$key.json")
-		if (path.isFile)
-			return Gson().fromJson(FileUtils.readFileToString(path, "utf-8"), App.FileDetail::class.java)
+		val stateFile = filesDir.resolve("books").resolve("$key.json")
+		val detail: FileDetail
+		if (stateFile.isFile)
+			detail =
+				Json().fromJson(FileUtils.readFileToString(stateFile, "utf-8"), App.FileDetail::class.java)
 		else
-			throw Exception("File not exist!")
+			throw Exception("Book info not exist: $key")
+		val indexPath = filesDir.resolve("books").resolve("$key-chapters.json")
+		if (indexPath.isFile)
+			detail.chapterJson = FileUtils.readFileToString(indexPath, "utf-8")
+		else
+			throw Exception("Book index not exist: $key")
+		return detail
 	}
 
 	fun saveFileConfig(fileInfo: FileDetail, key: String) {
@@ -219,9 +312,29 @@ class App : Application() {
 				path.delete()
 				path.mkdir()
 			}
-			val file = path.resolve("$key.json")
-			val content = Gson().toJson(fileInfo)
-			FileUtils.writeStringToFile(file, content, "utf-8")
+			val stateFile = path.resolve("$key.json")
+			val content = Json().toJson(fileInfo)
+			FileUtils.writeStringToFile(stateFile, content, "utf-8")
+
+			val chaptersFile = path.resolve("$key-chapters.json")
+			FileUtils.writeStringToFile(chaptersFile, fileInfo.chapterJson, "utf-8")
+		} catch (e: Exception) {
+			System.err.println("Save book detail failed: ${e.message}")
+		}
+	}
+
+	fun saveFileState(fileInfo: FileDetail, key: String) {
+		try {
+			val path = filesDir.resolve("books")
+			if (!path.exists()) {
+				path.mkdir()
+			} else if (!path.isDirectory) {
+				path.delete()
+				path.mkdir()
+			}
+			val stateFile = path.resolve("$key.json")
+			val content = Json().toJson(fileInfo as FileState)
+			FileUtils.writeStringToFile(stateFile, content, "utf-8")
 		} catch (e: Exception) {
 			System.err.println("Save book detail failed: ${e.message}")
 		}
@@ -253,7 +366,5 @@ class App : Application() {
 	}
 
 }
-
-
 
 
