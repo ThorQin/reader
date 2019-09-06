@@ -9,6 +9,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.github.thorqin.reader.R
 import kotlinx.android.synthetic.main.activity_book.*
 import android.animation.ObjectAnimator
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import com.github.thorqin.reader.App
 import com.google.gson.Gson
@@ -17,6 +19,10 @@ import java.io.File
 import java.lang.Exception
 import java.nio.charset.Charset
 import java.util.*
+import kotlin.concurrent.schedule
+import kotlin.concurrent.timer
+import kotlin.concurrent.timerTask
+import kotlin.math.floor
 
 
 class BookActivity : AppCompatActivity() {
@@ -32,6 +38,8 @@ class BookActivity : AppCompatActivity() {
 	private var atBegin = false
 	private var atEnd = false
 
+	private lateinit var handler: Handler
+
 	private val app: App
 		get () {
 			return application as App
@@ -39,6 +47,8 @@ class BookActivity : AppCompatActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+
+		handler = Handler(Looper.getMainLooper())
 
 		val key = intent.getStringExtra("key")
 		if (!app.config.files.containsKey(key)) {
@@ -51,6 +61,9 @@ class BookActivity : AppCompatActivity() {
 		setContentView(R.layout.activity_book)
 		setSupportActionBar(toolbar)
 		supportActionBar?.setDisplayHomeAsUpEnabled(true)
+		supportActionBar?.hide()
+
+
 
 		bufferView.addOnLayoutChangeListener {
 			v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
@@ -79,7 +92,7 @@ class BookActivity : AppCompatActivity() {
 			when (event.action ) {
 				MotionEvent.ACTION_DOWN -> {
 					startX = event.rawX
-					true
+					v == null
 				}
 				MotionEvent.ACTION_MOVE -> {
 					if (startX != null) {
@@ -96,10 +109,12 @@ class BookActivity : AppCompatActivity() {
 									moveDirection = Direction.LEFT
 									v = flipper.getChildAt(1)
 								}
+
 								viewX = v?.translationX
 							}
 						}
 						if (v != null) {
+							v?.elevation = 20f
 							when (moveDirection) {
 								Direction.RIGHT -> {
 									if (event.rawX > startX!!) {
@@ -130,11 +145,22 @@ class BookActivity : AppCompatActivity() {
 										flipper.removeViewAt(0)
 										flipper.addView(bottomView)
 										setPos()
+										v?.elevation = 0f
+										v = null
+										fileInfo.previous()
+										summary.readPoint = fileInfo.readPoint
+										handler.postDelayed( {
+											showContent(false)
+											app.saveFileState(fileInfo, fileInfo.key)
+											app.saveConfig()
+										}, 50)
 									}
 								} else {
 									val toPos = -boxWidth
 									moveViewTo(v!!, toPos) {
-										// Do nothing
+										v?.elevation = 0f
+										v = null
+										// showContent(false)
 									}
 								}
 							}
@@ -145,10 +171,21 @@ class BookActivity : AppCompatActivity() {
 										flipper.removeViewAt(2)
 										flipper.addView(bottomView, 0)
 										setPos()
+										v?.elevation = 0f
+										v = null
+										fileInfo.next()
+										summary.readPoint = fileInfo.readPoint
+										handler.postDelayed({
+											showContent(false)
+											app.saveFileState(fileInfo, fileInfo.key)
+											app.saveConfig()
+										}, 50)
 									}
 								} else {
 									moveViewTo(v!!, 0f) {
-										// Do nothing
+										v?.elevation = 0f
+										v = null
+										// showContent(false)
 									}
 								}
 							}
@@ -156,7 +193,6 @@ class BookActivity : AppCompatActivity() {
 					}
 					startX = null
 					viewX = null
-					v = null
 					true
 				}
 				else -> false
@@ -247,18 +283,29 @@ class BookActivity : AppCompatActivity() {
 		return fileInfo.getContent(c, p)
 	}
 
-	private fun showContent() {
+	private fun showContent(updateAll: Boolean) {
 		val prevView = flipper.getChildAt(2) as BookView
 		val currentView = flipper.getChildAt(1) as BookView
 		val nextView = flipper.getChildAt(0) as BookView
 
-		currentView.text = getCurrentPageContent()
+		//if (updateAll) {
+			val currentText = getCurrentPageContent()
+			// currentView.text = currentText
+			currentView.setBookInfo(fileInfo.name,
+				fileInfo.chapters[fileInfo.readChapter].name, currentText,
+				"${fileInfo.readPage} / ${fileInfo.totalPages}",
+				"${floor(fileInfo.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
+		//}
 		val prevText = getPrevPageContent()
 		if (prevText == null) {
 			atBegin = true
 		} else {
 			atBegin = false
-			prevView.text = prevText
+			//prevView.text = prevText
+			prevView.setBookInfo(fileInfo.name,
+			fileInfo.chapters[fileInfo.readChapter].name, prevText,
+			"${fileInfo.readPage} / ${fileInfo.totalPages}",
+			"${floor(fileInfo.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
 		}
 
 		val nextText = getNextPageContent()
@@ -266,15 +313,24 @@ class BookActivity : AppCompatActivity() {
 			atEnd = true
 		} else {
 			atEnd = false
-			nextView.text = nextText
+			// nextView.text = nextText
+			nextView.setBookInfo(fileInfo.name,
+				fileInfo.chapters[fileInfo.readChapter].name, nextText,
+				"${fileInfo.readPage} / ${fileInfo.totalPages}",
+				"${floor(fileInfo.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
 		}
 	}
 
 	private fun openBook() {
 		try {
+			val fontSize = app.config.fontSize.toFloat()
+			for (i in 0 until 3) {
+				(flipper.getChildAt(i) as BookView).textSize = fontSize
+			}
+			bufferView.textSize = fontSize
 			summary.lastReadTime = Date().time
 			fileInfo = app.getFileConfig(summary.key)
-			showContent()
+			showContent(true)
 		} catch (e: Exception) {
 			System.err.println("打开索引失败，需要重新初始化: $e")
 			e.printStackTrace()
@@ -409,11 +465,13 @@ class BookActivity : AppCompatActivity() {
 			fileInfo.screenHeight = height
 			app.saveFileConfig(fileInfo, summary.key)
 			app.saveConfig()
-			showContent()
+			showContent(true)
+
 		} catch (e: Exception) {
 			System.err.println("Error: $e")
 			app.toast(getString(R.string.cannot_init_book))
 		}
 	}
+
 
 }

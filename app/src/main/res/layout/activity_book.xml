@@ -24,8 +24,11 @@
 
 	<com.github.thorqin.reader.activities.book.BookView
 		android:id="@+id/bufferView"
+		android:visibility="invisible"
+		android:theme="@style/BookPage"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"/>
+
 
 	<FrameLayout
 		android:id="@+id/flipper"
@@ -33,22 +36,19 @@
 		android:layout_height="match_parent">
 
 		<com.github.thorqin.reader.activities.book.BookView
-			android:theme="@style/BookPage"
-			android:background="#cfc"
 			android:layout_width="match_parent"
-			android:layout_height="match_parent"/>
+			android:layout_height="match_parent"
+			android:theme="@style/BookPage" />
 
 		<com.github.thorqin.reader.activities.book.BookView
-			android:background="#fcc"
-			android:theme="@style/BookPage"
 			android:layout_width="match_parent"
-			android:layout_height="match_parent"/>
+			android:layout_height="match_parent"
+			android:theme="@style/BookPage" />
 
 		<com.github.thorqin.reader.activities.book.BookView
-			android:background="#ccf"
-			android:theme="@style/BookPage"
 			android:layout_width="match_parent"
-			android:layout_height="match_parent"/>
+			android:layout_height="match_parent"
+			android:theme="@style/BookPage" />
 
 	</FrameLayout>
 

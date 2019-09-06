@@ -96,6 +96,11 @@ class App : Application() {
 				}
 			}
 
+		val readPoint: Long
+			get() {
+				return chapters[readChapter].pages[readPageOfChapter].start
+			}
+
 		fun getContent(chapter: Int, page: Int): String {
 			var file = File(path)
 			if (chapters.size == 0 || chapter < 0 || chapter >= chapters.size) {
@@ -113,6 +118,28 @@ class App : Application() {
 					it.read(buffer)
 					return String(buffer)
 				}
+			}
+		}
+
+		fun next() {
+			if (readPageOfChapter < chapters[readChapter].pages.size - 1) {
+				readPageOfChapter++
+				readPage++
+			} else if (readChapter < chapters.size - 1) {
+				readChapter++
+				readPageOfChapter = 0
+				readPage++
+			}
+		}
+
+		fun previous() {
+			if (readPageOfChapter > 0) {
+				readPageOfChapter--
+				readPage--
+			} else if (readChapter > 0) {
+				readChapter--
+				readPageOfChapter = chapters[readChapter].pages.size - 1
+				readPage--
 			}
 		}
 	}
@@ -137,7 +164,7 @@ class App : Application() {
 
 	class AppConfig {
 		var files = HashMap<String, FileSummary>()
-		var fontSize = 14
+		var fontSize = 24
 		var lastRead: String? = null
 
 
