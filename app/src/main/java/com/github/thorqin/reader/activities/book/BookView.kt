@@ -5,10 +5,7 @@ import android.util.AttributeSet
 import android.view.View
 import com.github.thorqin.reader.App
 import kotlin.math.floor
-import android.text.Layout
-import android.R.attr.data
 import android.graphics.*
-import android.text.StaticLayout
 import kotlin.math.ceil
 
 
@@ -35,6 +32,7 @@ class BookView : View {
 	private var paintLeft: Float = 0f
 	private var paintTop: Float = 0f
 	private var startY: Int = 0
+	private var pxPerDp: Int = 0
 
 	var textSize = 24f
 		set(value) {
@@ -72,6 +70,7 @@ class BookView : View {
 		descPaint.typeface = Typeface.MONOSPACE
 		descPaint.textSize = App.dip2px(context, 14f).toFloat()
 		descPaint.color = Color.parseColor(descColor)
+		descPaint.isAntiAlias = true
 
 		paint = Paint()
 		paint.typeface = Typeface.MONOSPACE
@@ -82,42 +81,50 @@ class BookView : View {
 		lh = App.dip2px(context, (textSize * 1.5).toFloat())
 	}
 
+	private val _rect = Rect()
+	private var barHeight: Int = 0
 	override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
 		super.onLayout(changed, left, top, right, bottom)
 		if (changed) {
-			val barHeight = App.dip2px(context, 24f)
+			barHeight = App.dip2px(context, 24f)
 			cw = ceil(paint.measureText(" "))
 			paintWidth = (width - paddingLeft - paddingRight).toFloat()
-			paintHeight = (height - paddingTop - paddingBottom - barHeight * 2).toFloat()
-			paintLeft = paddingLeft + (paintWidth % cw)
+			paintHeight = height - paddingTop - paddingBottom - barHeight * 2f
+			paintLeft = paddingLeft + (paintWidth % cw) / 2
 			paintTop = paddingTop + barHeight + (paintHeight % lh)
-			val rect = Rect()
-			paint.getTextBounds("a中", 0, 2, rect)
-			startY = -rect.top
 
+			paint.getTextBounds("a中", 0, 2, _rect)
+			startY = -_rect.top
+			pxPerDp = App.dip2px(context, 1f)
 		}
 	}
+
+
 
 	override fun onDraw(canvas: Canvas?) {
 		if (canvas == null) {
 			return
 		}
 
-		canvas.drawText(this.bookName, paintLeft, startY.toFloat(), descPaint)
-		canvas.drawText(this.pageNo, paintLeft + App.dip2px(context, 20f), paintTop + paintHeight + startY.toFloat(), descPaint)
+		canvas.drawText(this.bookName, paintLeft, startY.toFloat() + 2 * pxPerDp, descPaint)
+		canvas.drawText(this.pageNo, paintLeft + pxPerDp * 20, paintTop + paintHeight + startY.toFloat() - 5 * pxPerDp, descPaint)
+
 		val descWidth = descPaint.measureText(this.progressInfo)
-		canvas.drawText(this.progressInfo, paintWidth - descWidth - App.dip2px(context, 20f), paintTop + paintHeight + startY.toFloat(), descPaint)
+		canvas.drawText(this.progressInfo, paintWidth - descWidth - pxPerDp * 20, paintTop + paintHeight + startY.toFloat() - 5 * pxPerDp, descPaint)
 
 		val totalLines = floor(paintHeight.toDouble() / lh).toInt()
 		var l = 0
 		var lw = 0f
-		var zero = 0.toChar()
-		for (i in 0 until text.length) {
-			val c = text[i]
+		val zero = 0.toChar()
+		var begin = true
+		for (c in text) {
 			if (c == '\r') {
 				continue
 			}
 			if (c == '\n') {
+				if (begin) {
+					continue
+				}
 				if (l < totalLines - 1) {
 					l++
 					lw = 0f
@@ -126,6 +133,7 @@ class BookView : View {
 					return
 				}
 			}
+			begin = false
 			val w = if (c > zero && c < 256.toChar()) {
 				cw
 			} else {
@@ -159,13 +167,17 @@ class BookView : View {
 		val totalLines = floor(paintHeight.toDouble() / lh).toInt()
 		var l = 0
 		var lw = 0f
-		var zero = 0.toChar()
+		val zero = 0.toChar()
+		var begin = true
 		for (i in offset until len) {
 			val c = text[i]
 			if (c == '\r') {
 				continue
 			}
 			if (c == '\n') {
+				if (begin) {
+					continue
+				}
 				if (l < totalLines - 1) {
 					l++
 					lw = 0f
@@ -174,6 +186,7 @@ class BookView : View {
 					return i - offset
 				}
 			}
+			begin = false
 			val w = if (c > zero && c < 256.toChar()) {
 				cw
 			} else {

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">轻阅读</string>
+	<string name="cannot_init_book">无法初始化图书信息！</string>
+	<string name="clear_book">清空书架</string>
+	<string name="file_not_exists">文件不存在，是否从列表移除？</string>
+	<string name="invalid_config">配置文件无效，请清空书架，重新搜索！</string>
+	<string name="no_book">没有图书 点击搜索</string>
+	<string name="no_storage_permission">存储权限不可用</string>
+	<string name="open_now">立即开启</string>
+	<string name="search_book">搜索图书</string>
+	<string name="should_allow_permission">请在-应用设置-权限-中，允许读取存储权限来查找和打开图书</string>
+	<string name="topic">章节</string>
+	<string name="font_zoom_in">放大</string>
+	<string name="font_zoom_out">缩小</string>
+	<string name="read_pages">阅读进度</string>
+</resources>

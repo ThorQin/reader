@@ -11,17 +11,14 @@ import kotlinx.android.synthetic.main.activity_book.*
 import android.animation.ObjectAnimator
 import android.os.Handler
 import android.os.Looper
-import android.widget.Toast
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import com.github.thorqin.reader.App
-import com.google.gson.Gson
-import org.apache.commons.io.FileUtils
 import java.io.File
 import java.lang.Exception
 import java.nio.charset.Charset
 import java.util.*
-import kotlin.concurrent.schedule
-import kotlin.concurrent.timer
-import kotlin.concurrent.timerTask
+import kotlin.math.abs
 import kotlin.math.floor
 
 
@@ -37,6 +34,7 @@ class BookActivity : AppCompatActivity() {
 	private var boxWidth: Float = 0F
 	private var atBegin = false
 	private var atEnd = false
+	private var showActionBar = false
 
 	private lateinit var handler: Handler
 
@@ -56,13 +54,16 @@ class BookActivity : AppCompatActivity() {
 			finish()
 			return
 		}
-		summary = app.config.files[key] as App.FileSummary
 
 		setContentView(R.layout.activity_book)
+
+		summary = app.config.files[key] as App.FileSummary
+		toolbar.title = summary.name
 		setSupportActionBar(toolbar)
+		supportActionBar?.title = summary.name
 		supportActionBar?.setDisplayHomeAsUpEnabled(true)
 		supportActionBar?.hide()
-
+		footBar.visibility = GONE
 
 
 		bufferView.addOnLayoutChangeListener {
@@ -190,6 +191,13 @@ class BookActivity : AppCompatActivity() {
 								}
 							}
 						}
+					} else {
+						if (startX != null && abs(event.rawX - startX!!) < 10 ) {
+							// IS CLICK
+							if (startX!! > boxWidth / 3 && startX!! < boxWidth / 3 * 2) {
+								toggleActionBar()
+							}
+						}
 					}
 					startX = null
 					viewX = null
@@ -200,6 +208,18 @@ class BookActivity : AppCompatActivity() {
 		}
 
 		openBook()
+	}
+
+	private fun toggleActionBar() {
+		if (!showActionBar) {
+			supportActionBar!!.show()
+			footBar.visibility = VISIBLE
+			showActionBar = true
+		} else {
+			supportActionBar!!.hide()
+			footBar.visibility = GONE
+			showActionBar = false
+		}
 	}
 
 	override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -233,19 +253,22 @@ class BookActivity : AppCompatActivity() {
 		flipper.getChildAt(0).translationX = 0f
 	}
 
-	private fun getPrevPageContent(): String? {
+
+	private class PageInfo(var text: String, var chapterName: String, var readPage: Int)
+
+	private fun getPrevPageInfo(): PageInfo? {
 		if (fileInfo.chapters.size == 0) {
 			return null
 		}
 		var p: Int
 		var c = fileInfo.readChapter
-		if (fileInfo.readPageOfChapter > 0) {
-			p = fileInfo.readPageOfChapter - 1
+		p = if (fileInfo.readPageOfChapter > 0) {
+			fileInfo.readPageOfChapter - 1
 		} else {
 			if (c > 0) {
 				c--
 				if (fileInfo.chapters[c].pages.size > 0) {
-					p = fileInfo.chapters[c].pages.size - 1
+					fileInfo.chapters[c].pages.size - 1
 				} else {
 					return null
 				}
@@ -253,26 +276,28 @@ class BookActivity : AppCompatActivity() {
 				return null
 			}
 		}
-		return fileInfo.getContent(c, p)
+		return PageInfo(fileInfo.getContent(c, p),
+			fileInfo.chapters[c].name, fileInfo.readPage + 1)
 	}
 
-	private fun getCurrentPageContent(): String {
-		return fileInfo.getContent(fileInfo.readChapter, fileInfo.readPageOfChapter)
+	private fun getCurrentPageInfo(): PageInfo {
+		return PageInfo(fileInfo.getContent(fileInfo.readChapter, fileInfo.readPageOfChapter),
+			fileInfo.chapters[fileInfo.readChapter].name, fileInfo.readPage)
 	}
 
-	private fun getNextPageContent(): String? {
+	private fun getNextPageInfo(): PageInfo? {
 		if (fileInfo.chapters.size == 0) {
 			return null
 		}
 		var p: Int
 		var c = fileInfo.readChapter
-		if (fileInfo.readPageOfChapter < fileInfo.chapters[c].pages.size - 1) {
-			p = fileInfo.readPageOfChapter + 1
+		p = if (fileInfo.readPageOfChapter < fileInfo.chapters[c].pages.size - 1) {
+			fileInfo.readPageOfChapter + 1
 		} else {
 			if (c < fileInfo.chapters.size - 1) {
 				c++
 				if (fileInfo.chapters[c].pages.size > 0) {
-					p = 0
+					0
 				} else {
 					return null
 				}
@@ -280,7 +305,8 @@ class BookActivity : AppCompatActivity() {
 				return null
 			}
 		}
-		return fileInfo.getContent(c, p)
+		return PageInfo(fileInfo.getContent(c, p),
+			fileInfo.chapters[c].name, fileInfo.readPage - 1)
 	}
 
 	private fun showContent(updateAll: Boolean) {
@@ -288,36 +314,36 @@ class BookActivity : AppCompatActivity() {
 		val currentView = flipper.getChildAt(1) as BookView
 		val nextView = flipper.getChildAt(0) as BookView
 
-		//if (updateAll) {
-			val currentText = getCurrentPageContent()
+		if (updateAll) {
+			val current = getCurrentPageInfo()
 			// currentView.text = currentText
 			currentView.setBookInfo(fileInfo.name,
-				fileInfo.chapters[fileInfo.readChapter].name, currentText,
-				"${fileInfo.readPage} / ${fileInfo.totalPages}",
+				current.chapterName, current.text,
+				"${fileInfo.readPage + 1} / ${fileInfo.totalPages}",
 				"${floor(fileInfo.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
-		//}
-		val prevText = getPrevPageContent()
-		if (prevText == null) {
+		}
+		val prev = getPrevPageInfo()
+		if (prev == null) {
 			atBegin = true
 		} else {
 			atBegin = false
 			//prevView.text = prevText
 			prevView.setBookInfo(fileInfo.name,
-			fileInfo.chapters[fileInfo.readChapter].name, prevText,
-			"${fileInfo.readPage} / ${fileInfo.totalPages}",
-			"${floor(fileInfo.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
+				prev.chapterName, prev.text,
+			"${prev.readPage + 1} / ${fileInfo.totalPages}",
+			"${floor(prev.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
 		}
 
-		val nextText = getNextPageContent()
-		if (nextText == null) {
+		val next = getNextPageInfo()
+		if (next == null) {
 			atEnd = true
 		} else {
 			atEnd = false
 			// nextView.text = nextText
 			nextView.setBookInfo(fileInfo.name,
-				fileInfo.chapters[fileInfo.readChapter].name, nextText,
-				"${fileInfo.readPage} / ${fileInfo.totalPages}",
-				"${floor(fileInfo.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
+				next.chapterName, next.text,
+				"${next.readPage + 1} / ${fileInfo.totalPages}",
+				"${floor(next.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
 		}
 	}
 
@@ -332,8 +358,7 @@ class BookActivity : AppCompatActivity() {
 			fileInfo = app.getFileConfig(summary.key)
 			showContent(true)
 		} catch (e: Exception) {
-			System.err.println("打开索引失败，需要重新初始化: $e")
-			e.printStackTrace()
+			println("Open index file failed, need to initialize!")
 		}
 	}
 

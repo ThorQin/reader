@@ -1,31 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="app_name">轻阅读</string>
-	<string name="search_book">搜索图书</string>
-	<string name="no_book">没有图书 点击搜索</string>
-	<string name="clear_book">清空书架</string>
-	<string name="no_storage_permission">存储权限不可用</string>
-	<string name="should_allow_permission">请在-应用设置-权限-中，允许读取存储权限来查找和打开图书</string>
-	<string name="open_now">立即开启</string>
-	<string name="file_not_exists">文件不存在，是否从列表移除？</string>
-	<string name="cannot_init_book">无法初始化图书信息！</string>
-	<string name="invalid_config">配置文件无效，请清空书架，重新搜索！</string>
-
-	<string name="title_activity_launch_screen">LaunchScreenActivity</string>
-	<string name="title_activity_reader">ReaderActivity</string>
-	<string name="title_activity_test">TestActivity</string>
-	<string name="title_activity_main2">Main2Activity</string>
-	<string name="navigation_drawer_open">Open navigation drawer</string>
-	<string name="navigation_drawer_close">Close navigation drawer</string>
-	<string name="nav_header_title">Android Studio</string>
-	<string name="nav_header_subtitle">android.studio@android.com</string>
-	<string name="nav_header_desc">Navigation header</string>
-	<string name="action_settings">Settings</string>
-
-	<string name="menu_home">Home</string>
-	<string name="menu_gallery">Gallery</string>
-	<string name="menu_slideshow">Slideshow</string>
-	<string name="menu_tools">Tools</string>
-	<string name="menu_share">Share</string>
-	<string name="menu_send">Send</string>
-	<string name="title_activity_book">BookActivity</string>
+	<string name="app_name">Light Glance</string>
+	<string name="cannot_init_book">Cannot initialize book info</string>
+	<string name="clear_book">Clear books</string>
+	<string name="file_not_exists">File does not exists, would you like to remove it?</string>
+	<string name="invalid_config">Configuration file invalid, please empty list and refresh!</string>
+	<string name="no_book">No books, click to search</string>
+	<string name="no_storage_permission">No storage premission</string>
+	<string name="open_now">Open Now</string>
+	<string name="search_book">Search Book</string>
+	<string name="should_allow_permission">Use \"App Settings -> Permission Settings\" to enable storage permission</string>
+	<string name="topic">Topic</string>
+	<string name="font_zoom_in">Zoom In</string>
+	<string name="font_zoom_out">Zoom Out</string>
+	<string name="read_pages">Reading Progress</string>
 </resources>

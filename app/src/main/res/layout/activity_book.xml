@@ -9,8 +9,8 @@
 	<com.google.android.material.appbar.AppBarLayout
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:alpha="0.6"
-		android:background="@color/colorBlack"
+		android:alpha="0.95"
+		android:background="@color/colorWorkspace"
 		android:theme="@style/AppTheme.AppBarOverlay">
 
 		<androidx.appcompat.widget.Toolbar
@@ -51,5 +51,91 @@
 			android:theme="@style/BookPage" />
 
 	</FrameLayout>
+
+	<LinearLayout
+		android:id="@+id/footBar"
+		android:layout_gravity="bottom"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:alpha="0.95"
+		android:background="@color/colorWorkspace"
+		android:paddingTop="1dp"
+		android:orientation="vertical">
+		<TextView
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:textColor="@color/colorWhite"
+
+			android:padding="10dp"
+			android:text="@string/read_pages"/>
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:padding="5dp"
+
+			android:orientation="horizontal">
+			<TextView
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:textColor="@color/colorWhite"
+				android:padding="10dp"
+				android:text="0%"/>
+			<SeekBar
+				android:id="@+id/seekBar"
+				android:progressBackgroundTint="@color/colorWhite"
+				android:layout_marginTop="5dp"
+				android:layout_width="0dp"
+				android:layout_weight="1"
+				android:layout_height="30dp" />
+			<TextView
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:textColor="@color/colorWhite"
+				android:padding="10dp"
+				android:text="100%"/>
+		</LinearLayout>
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+
+
+			android:paddingBottom="20dp"
+			android:orientation="horizontal">
+
+			<Button
+				android:id="@+id/button"
+				android:layout_width="wrap_content"
+				android:paddingStart="10dp"
+				android:paddingEnd="10dp"
+				android:background="@color/colorWorkspace"
+				android:drawableStart="@drawable/ic_toc_black_24dp"
+				android:layout_height="wrap_content"
+				android:textColor="@color/colorWhite"
+				android:text="@string/topic" />
+
+			<Button
+				android:id="@+id/fontZoomIn"
+				android:layout_width="wrap_content"
+				android:paddingStart="10dp"
+				android:paddingEnd="10dp"
+				android:background="@color/colorWorkspace"
+				android:drawableStart="@drawable/ic_zitifangda"
+				android:layout_height="wrap_content"
+				android:textColor="@color/colorWhite"
+				android:text="@string/font_zoom_in" />
+
+			<Button
+				android:id="@+id/fontZoomOut"
+				android:layout_width="wrap_content"
+				android:paddingStart="10dp"
+				android:paddingEnd="10dp"
+				android:background="@color/colorWorkspace"
+				android:drawableStart="@drawable/ic_zitisuoxiao"
+				android:layout_height="wrap_content"
+				android:textColor="@color/colorWhite"
+				android:text="@string/font_zoom_out" />
+		</LinearLayout>
+	</LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
