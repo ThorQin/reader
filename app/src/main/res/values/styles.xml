@@ -57,4 +57,11 @@
 		<item name="android:background">@color/colorBlack</item>
 	</style>
 
+	<style name="BookSettingButton">
+		<item name="android:textColor">@color/colorWhite</item>
+		<item name="android:paddingTop">10dp</item>
+		<item name="android:paddingBottom">10dp</item>
+
+	</style>
+
 </resources>

@@ -9,17 +9,22 @@ import androidx.appcompat.app.AppCompatActivity
 import com.github.thorqin.reader.R
 import kotlinx.android.synthetic.main.activity_book.*
 import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.os.Handler
 import android.os.Looper
-import android.view.View.GONE
-import android.view.View.VISIBLE
+import android.view.View.*
 import com.github.thorqin.reader.App
 import java.io.File
 import java.lang.Exception
 import java.nio.charset.Charset
 import java.util.*
+import java.util.regex.Pattern
 import kotlin.math.abs
 import kotlin.math.floor
+
+
+
+
 
 
 class BookActivity : AppCompatActivity() {
@@ -43,6 +48,13 @@ class BookActivity : AppCompatActivity() {
 			return application as App
 		}
 
+	fun getActionBarView(): View {
+		val window = this.window
+		val v = window.decorView
+		val resId = resources.getIdentifier("action_bar_container", "id", "android")
+		return v.findViewById(resId)
+	}
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 
@@ -62,8 +74,15 @@ class BookActivity : AppCompatActivity() {
 		setSupportActionBar(toolbar)
 		supportActionBar?.title = summary.name
 		supportActionBar?.setDisplayHomeAsUpEnabled(true)
-		supportActionBar?.hide()
-		footBar.visibility = GONE
+		// supportActionBar?.hide()
+		appBar.visibility = INVISIBLE
+		footBar.visibility = INVISIBLE
+		handler.postDelayed({
+			appBar.translationY = -appBar.height.toFloat()
+			appBar.visibility = GONE
+			footBar.translationY = footBar.height.toFloat()
+			footBar.visibility = GONE
+		}, 50)
 
 
 		bufferView.addOnLayoutChangeListener {
@@ -150,8 +169,8 @@ class BookActivity : AppCompatActivity() {
 										v = null
 										fileInfo.previous()
 										summary.readPoint = fileInfo.readPoint
+										showContent(false)
 										handler.postDelayed( {
-											showContent(false)
 											app.saveFileState(fileInfo, fileInfo.key)
 											app.saveConfig()
 										}, 50)
@@ -176,8 +195,8 @@ class BookActivity : AppCompatActivity() {
 										v = null
 										fileInfo.next()
 										summary.readPoint = fileInfo.readPoint
+										showContent(false)
 										handler.postDelayed({
-											showContent(false)
 											app.saveFileState(fileInfo, fileInfo.key)
 											app.saveConfig()
 										}, 50)
@@ -211,15 +230,43 @@ class BookActivity : AppCompatActivity() {
 	}
 
 	private fun toggleActionBar() {
+		val anim = ValueAnimator()
 		if (!showActionBar) {
-			supportActionBar!!.show()
+			appBar.visibility = VISIBLE
 			footBar.visibility = VISIBLE
-			showActionBar = true
+			anim.setFloatValues(1f, 0f)
 		} else {
-			supportActionBar!!.hide()
-			footBar.visibility = GONE
-			showActionBar = false
+			anim.setFloatValues(0f, 1f)
 		}
+		anim.duration = 200
+		anim.addUpdateListener( object: ValueAnimator.AnimatorUpdateListener {
+			override fun onAnimationUpdate(p0: ValueAnimator?) {
+				val value = anim.animatedValue as Float
+				footBar.translationY = footBar.height * value
+				appBar.translationY = -appBar.height * value
+			}
+		})
+		anim.addListener(object: Animator.AnimatorListener {
+			override fun onAnimationRepeat(p0: Animator?) {}
+			override fun onAnimationEnd(p0: Animator?) {
+				if (!showActionBar) {
+					appBar.translationY = 0f
+					footBar.translationY = 0f
+					showActionBar = true
+				} else {
+					appBar.visibility = GONE
+					footBar.translationY = -appBar.height.toFloat()
+					footBar.visibility = GONE
+					footBar.translationY = footBar.height.toFloat()
+					showActionBar = false
+				}
+			}
+
+			override fun onAnimationCancel(p0: Animator?) {}
+
+			override fun onAnimationStart(p0: Animator?) {}
+		})
+		anim.start()
 	}
 
 	override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -254,7 +301,7 @@ class BookActivity : AppCompatActivity() {
 	}
 
 
-	private class PageInfo(var text: String, var chapterName: String, var readPage: Int)
+	private class PageInfo(var text: String, var chapterName: String, var readPage: Int, var chapterPage: Int)
 
 	private fun getPrevPageInfo(): PageInfo? {
 		if (fileInfo.chapters.size == 0) {
@@ -277,12 +324,12 @@ class BookActivity : AppCompatActivity() {
 			}
 		}
 		return PageInfo(fileInfo.getContent(c, p),
-			fileInfo.chapters[c].name, fileInfo.readPage + 1)
+			fileInfo.chapters[c].name, fileInfo.readPage + 1, p)
 	}
 
 	private fun getCurrentPageInfo(): PageInfo {
 		return PageInfo(fileInfo.getContent(fileInfo.readChapter, fileInfo.readPageOfChapter),
-			fileInfo.chapters[fileInfo.readChapter].name, fileInfo.readPage)
+			fileInfo.chapters[fileInfo.readChapter].name, fileInfo.readPage, fileInfo.readPageOfChapter)
 	}
 
 	private fun getNextPageInfo(): PageInfo? {
@@ -306,7 +353,7 @@ class BookActivity : AppCompatActivity() {
 			}
 		}
 		return PageInfo(fileInfo.getContent(c, p),
-			fileInfo.chapters[c].name, fileInfo.readPage - 1)
+			fileInfo.chapters[c].name, fileInfo.readPage - 1, p)
 	}
 
 	private fun showContent(updateAll: Boolean) {
@@ -320,7 +367,9 @@ class BookActivity : AppCompatActivity() {
 			currentView.setBookInfo(fileInfo.name,
 				current.chapterName, current.text,
 				"${fileInfo.readPage + 1} / ${fileInfo.totalPages}",
-				"${floor(fileInfo.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
+				"${floor(fileInfo.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%",
+				current.chapterPage
+				)
 		}
 		val prev = getPrevPageInfo()
 		if (prev == null) {
@@ -331,7 +380,8 @@ class BookActivity : AppCompatActivity() {
 			prevView.setBookInfo(fileInfo.name,
 				prev.chapterName, prev.text,
 			"${prev.readPage + 1} / ${fileInfo.totalPages}",
-			"${floor(prev.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
+			"${floor(prev.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%",
+			prev.chapterPage)
 		}
 
 		val next = getNextPageInfo()
@@ -343,7 +393,8 @@ class BookActivity : AppCompatActivity() {
 			nextView.setBookInfo(fileInfo.name,
 				next.chapterName, next.text,
 				"${next.readPage + 1} / ${fileInfo.totalPages}",
-				"${floor(next.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%")
+				"${floor(next.readPage / fileInfo.totalPages.toDouble() * 10000) / 100}%",
+				next.chapterPage)
 		}
 	}
 
@@ -362,7 +413,7 @@ class BookActivity : AppCompatActivity() {
 		}
 	}
 
-	private fun parseFile(file: File): App.FileDetail {
+	private fun parseFile(file: File, pattern: Pattern): App.FileDetail {
 
 		lateinit var charset: String
 		file.inputStream().use {
@@ -375,7 +426,7 @@ class BookActivity : AppCompatActivity() {
 			var line = StringBuilder(8192)
 			var content = StringBuilder(8192)
 			var lineStart = 0L
-			var lineSize = 0L
+			var lineSize = 0
 			var scan = 0L
 			var lineEnd = true
 			var beginChapter = true
@@ -389,11 +440,12 @@ class BookActivity : AppCompatActivity() {
 				if (!beginChapter) {
 					if (lineSize in 1..50) {
 						// match line content
-						if (false) { //TODO: CHANGE TO MATCH LOGIC
+						if (pattern.matcher(line).find()) {
 							chapter.endPoint = lineStart
-							parseChapter(fileInfo, chapter, content.toString())
+							val str = content.subSequence(0, content.length - lineSize).trimEnd()
+							parseChapter(fileInfo, chapter, str, str.length)
 							chapter = App.Chapter()
-							chapter.name = line.toString()
+							chapter.name = line.trim().toString()
 							beginChapter = true
 							content.clear()
 							line.clear()
@@ -403,7 +455,8 @@ class BookActivity : AppCompatActivity() {
 							line.clear()
 						} else {
 							chapter.endPoint = scan
-							parseChapter(fileInfo, chapter, content.toString())
+							val str = content.trimEnd()
+							parseChapter(fileInfo, chapter, str, str.length)
 						}
 					} else if (c != null) {
 						content.append(c)
@@ -411,7 +464,8 @@ class BookActivity : AppCompatActivity() {
 						line.clear()
 					} else {
 						chapter.endPoint = scan
-						parseChapter(fileInfo, chapter, content.toString())
+						val str = content.trimEnd()
+						parseChapter(fileInfo, chapter, str, str.length)
 					}
 				}
 			}
@@ -424,7 +478,7 @@ class BookActivity : AppCompatActivity() {
 				}
 				for (i in 0 until size) {
 					val c = buffer[i]
-					if (c == '\n' || c == '\r') {
+					if (c == '\n') { //  || c == '\r'
 						lineEnd = true
 						testEnd(c)
 					} else {
@@ -456,31 +510,45 @@ class BookActivity : AppCompatActivity() {
 		}
 	}
 
-	private fun parseChapter(fileInfo: App.FileDetail, chapter: App.Chapter, content: String) {
+	private fun parseChapter(fileInfo: App.FileDetail, chapter: App.Chapter, content: CharSequence, length: Int) {
 		if (content.isEmpty() && chapter.name.isEmpty()) {
 			return
 		}
 		var offset = 0
-		while (offset < content.length) {
-			val pageSize = bufferView.calcPageEnd(content, offset, content.length)
+		var index = 0
+		while (offset < length) {
+			val pageSize = bufferView.calcPageSize(content, offset, length, index)
 			if (pageSize > 0) {
 				val page = App.Page()
 				page.start = chapter.startPoint + offset
 				page.length = pageSize
 				chapter.pages.add(page)
+				index++
 				offset += pageSize
 			} else {
 				break
 			}
+		}
+		if (chapter.pages.isEmpty()) {
+			val page = App.Page()
+			page.start = chapter.startPoint + offset
+			page.length = 0
+			chapter.pages.add(page)
+			index++
 		}
 		fileInfo.chapters.add(chapter)
 	}
 
 	private fun initBook(width: Int, height: Int) {
 		bufferView.textSize = app.config.fontSize.toFloat()
+		val pattern: Pattern = try {
+			Pattern.compile(app.config.topicRule, Pattern.CASE_INSENSITIVE)
+		} catch (e: Exception) {
+			Pattern.compile(App.TOPIC_RULE, Pattern.CASE_INSENSITIVE)
+		}
 		try {
 			var file = File(summary.path)
-			fileInfo = parseFile(file)
+			fileInfo = parseFile(file, pattern)
 			summary.lastReadTime = Date().time
 			app.config.lastRead = summary.key
 			fileInfo.key = summary.key

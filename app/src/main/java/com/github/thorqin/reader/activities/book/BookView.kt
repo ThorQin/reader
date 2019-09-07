@@ -22,9 +22,11 @@ class BookView : View {
 	var chapterName = ""
 	var pageNo = ""
 	var progressInfo = ""
+	var pageIndex = 0
 
 	private lateinit var paint: Paint
 	private lateinit var descPaint: Paint
+	private lateinit var titlePaint: Paint
 	private var cw: Float = 0f
 	private var lh: Int = 0
 	private var paintWidth: Float = 0f
@@ -55,12 +57,13 @@ class BookView : View {
 			invalidate()
 		}
 
-	fun setBookInfo(bookName: String, chapterName: String, text: String, pageNo: String, progressInfo: String) {
+	fun setBookInfo(bookName: String, chapterName: String, text: String, pageNo: String, progressInfo: String, pageIndex: Int) {
 		this.text = text
 		this.bookName = bookName
 		this.chapterName = chapterName
 		this.pageNo = pageNo
 		this.progressInfo = progressInfo
+		this.pageIndex = pageIndex
 		paint.isAntiAlias = true
 		invalidate()
 	}
@@ -76,13 +79,21 @@ class BookView : View {
 		paint.typeface = Typeface.MONOSPACE
 		paint.textSize = App.dip2px(context, textSize).toFloat()
 		paint.color = Color.parseColor(textColor)
-		// paint.strokeWidth = 2f
 		paint.isAntiAlias = true
+
+		titlePaint = Paint()
+		titlePaint.typeface = Typeface.MONOSPACE
+		titlePaint.textSize = App.dip2px(context, textSize * 1.5f).toFloat()
+		titlePaint.color = Color.parseColor(textColor)
+		titlePaint.isAntiAlias = true
+
 		lh = App.dip2px(context, (textSize * 1.5).toFloat())
 	}
 
 	private val _rect = Rect()
+	private val _titleRect = Rect()
 	private var barHeight: Int = 0
+	private var titleCw: Float = 0f
 	override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
 		super.onLayout(changed, left, top, right, bottom)
 		if (changed) {
@@ -96,26 +107,66 @@ class BookView : View {
 			paint.getTextBounds("a中", 0, 2, _rect)
 			startY = -_rect.top
 			pxPerDp = App.dip2px(context, 1f)
+
+			titlePaint.getTextBounds("a中", 0, 2, _titleRect)
+			titleCw = ceil(titlePaint.measureText(" "))
 		}
 	}
 
 
+	private val zero = 0.toChar()
+
+	fun drawTitle(canvas: Canvas, title: String) {
+
+		var t = paintTop
+		var l = paintLeft
+		val lh = _titleRect.bottom - _titleRect.top
+
+		var lw = 0f
+		var line = 1
+		for (c in title) {
+			val w = if (c > zero && c < 256.toChar()) {
+				titleCw
+			} else {
+				2 * titleCw
+			}
+			if (lw + w > paintWidth) {
+				if (line < 2) {
+					lw = 0f
+					t += lh + 3 * pxPerDp
+					line++
+				} else {
+					break
+				}
+			}
+			canvas.drawText(c.toString(), paintLeft + lw, t -_titleRect.top, titlePaint)
+			lw += w
+		}
+		t += lh + 3 * pxPerDp
+		canvas.drawRect(l, t,
+			l + paintWidth, t + 1 * pxPerDp.toFloat(), titlePaint)
+	}
 
 	override fun onDraw(canvas: Canvas?) {
 		if (canvas == null) {
 			return
 		}
 
-		canvas.drawText(this.bookName, paintLeft, startY.toFloat() + 2 * pxPerDp, descPaint)
+		val title = if (chapterName.isEmpty()) this.bookName else chapterName
+		canvas.drawText(title , paintLeft, startY.toFloat() + 2 * pxPerDp, descPaint)
 		canvas.drawText(this.pageNo, paintLeft + pxPerDp * 20, paintTop + paintHeight + startY.toFloat() - 5 * pxPerDp, descPaint)
 
 		val descWidth = descPaint.measureText(this.progressInfo)
 		canvas.drawText(this.progressInfo, paintWidth - descWidth - pxPerDp * 20, paintTop + paintHeight + startY.toFloat() - 5 * pxPerDp, descPaint)
 
+		if (pageIndex == 0) {
+			drawTitle(canvas, title)
+		}
+
 		val totalLines = floor(paintHeight.toDouble() / lh).toInt()
-		var l = 0
+		var l = if (pageIndex == 0) 3 else 0
 		var lw = 0f
-		val zero = 0.toChar()
+
 		var begin = true
 		for (c in text) {
 			if (c == '\r') {
@@ -143,20 +194,17 @@ class BookView : View {
 				if (l < totalLines - 1) {
 					l++
 					lw = 0f
-					canvas.drawText(c.toString(), paintLeft + lw, paintTop + startY + l * lh, paint)
-					lw += w
 				} else {
 					return
 				}
-			} else {
-				canvas.drawText(c.toString(), paintLeft + lw, paintTop + startY + l * lh, paint)
-				lw += w
 			}
+			canvas.drawText(c.toString(), paintLeft + lw, paintTop + startY + l * lh, paint)
+			lw += w
 		}
 	}
 
 
-	fun calcPageEnd(text: String, offset: Int, length: Int) : Int {
+	fun calcPageSize(text: CharSequence, offset: Int, length: Int, pageIndex: Int) : Int {
 		if (cw <= 0) {
 			return 0
 		}
@@ -164,7 +212,10 @@ class BookView : View {
 			text.length
 		} else length
 
-		val totalLines = floor(paintHeight.toDouble() / lh).toInt()
+		var totalLines = floor(paintHeight.toDouble() / lh).toInt()
+		if (pageIndex == 0) {
+			totalLines -= 3
+		}
 		var l = 0
 		var lw = 0f
 		val zero = 0.toChar()

@@ -7,15 +7,15 @@
 	tools:context=".activities.book.BookActivity">
 
 	<com.google.android.material.appbar.AppBarLayout
+		android:id="@+id/appBar"
+		android:alpha="1"
+		android:background="@color/colorWorkspace"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:alpha="0.95"
-		android:background="@color/colorWorkspace"
 		android:theme="@style/AppTheme.AppBarOverlay">
 
 		<androidx.appcompat.widget.Toolbar
 			android:id="@+id/toolbar"
-
 			android:layout_width="match_parent"
 			android:layout_height="?attr/actionBarSize"
 			app:popupTheme="@style/AppTheme.PopupOverlay" />
@@ -57,7 +57,7 @@
 		android:layout_gravity="bottom"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:alpha="0.95"
+		android:alpha="1"
 		android:background="@color/colorWorkspace"
 		android:paddingTop="1dp"
 		android:orientation="vertical">
@@ -100,41 +100,51 @@
 			android:layout_height="wrap_content"
 
 
-			android:paddingBottom="20dp"
-			android:orientation="horizontal">
+			android:orientation="horizontal"
+			android:paddingTop="10dp"
+			android:paddingBottom="10dp">
 
 			<Button
 				android:id="@+id/button"
-				android:layout_width="wrap_content"
-				android:paddingStart="10dp"
-				android:paddingEnd="10dp"
-				android:background="@color/colorWorkspace"
-				android:drawableStart="@drawable/ic_toc_black_24dp"
-				android:layout_height="wrap_content"
-				android:textColor="@color/colorWhite"
-				android:text="@string/topic" />
+				android:layout_weight="1"
+				android:layout_width="0dp"
+				android:layout_height="match_parent"
+				android:drawableTop="@drawable/ic_toc_white_24dp"
+				android:text="@string/topic"
+				android:background="@drawable/book_setting_button_bg"
+				android:theme="@style/BookSettingButton" />
 
 			<Button
 				android:id="@+id/fontZoomIn"
-				android:layout_width="wrap_content"
-				android:paddingStart="10dp"
-				android:paddingEnd="10dp"
-				android:background="@color/colorWorkspace"
-				android:drawableStart="@drawable/ic_zitifangda"
-				android:layout_height="wrap_content"
-				android:textColor="@color/colorWhite"
-				android:text="@string/font_zoom_in" />
+				android:layout_weight="1"
+				android:layout_width="0dp"
+				android:layout_height="match_parent"
+				android:drawableTop="@drawable/ic_zitifangda"
+				android:text="@string/font_zoom_in"
+				android:background="@drawable/book_setting_button_bg"
+				android:theme="@style/BookSettingButton"
+				/>
 
 			<Button
 				android:id="@+id/fontZoomOut"
-				android:layout_width="wrap_content"
-				android:paddingStart="10dp"
-				android:paddingEnd="10dp"
-				android:background="@color/colorWorkspace"
-				android:drawableStart="@drawable/ic_zitisuoxiao"
-				android:layout_height="wrap_content"
-				android:textColor="@color/colorWhite"
-				android:text="@string/font_zoom_out" />
+				android:layout_weight="1"
+				android:layout_width="0dp"
+				android:layout_height="match_parent"
+				android:drawableTop="@drawable/ic_zitisuoxiao"
+				android:text="@string/font_zoom_out"
+				android:background="@drawable/book_setting_button_bg"
+				android:theme="@style/BookSettingButton" />
+
+			<Button
+				android:id="@+id/setting"
+				android:layout_weight="1"
+				android:layout_width="0dp"
+				android:layout_height="match_parent"
+				android:drawableTop="@drawable/ic_more_vert_white_24dp"
+				android:text="@string/setting"
+				android:background="@drawable/book_setting_button_bg"
+				android:theme="@style/BookSettingButton" />
+
 		</LinearLayout>
 	</LinearLayout>
 
