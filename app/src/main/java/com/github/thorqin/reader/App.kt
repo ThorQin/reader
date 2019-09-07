@@ -96,10 +96,21 @@ class App : Application() {
 				}
 			}
 
-		val readPoint: Long
-			get() {
-				return chapters[readChapter].pages[readPageOfChapter].start
+		fun updateReadPage(value: Int) {
+			if (value in 0 until totalPages) {
+				readPage = value
+				var sum = 0
+				for (i in 0 until chapters.size) {
+					if (sum + chapters[i].pages.size - 1 >= readPage) {
+						readChapter = i
+						readPageOfChapter = readPage - sum
+						break
+					} else {
+						sum += chapters[i].pages.size
+					}
+				}
 			}
+		}
 
 		fun getContent(chapter: Int, page: Int): String {
 			var file = File(path)
@@ -149,12 +160,12 @@ class App : Application() {
 		var path = ""
 		var name = ""
 		var totalLength = 0L
-		var readPoint = 0L
+		var progress = 0f
 		var lastReadTime: Long? = null
 		val desc: String
 			get() {
 				var p = if (totalLength > 0L) {
-					floor(readPoint.toDouble() / (totalLength * 100L)).toInt()
+					floor(progress * 10000L / 100).toInt()
 				} else {
 					0
 				}

@@ -11,8 +11,9 @@
 	<string name="search_book">Search Book</string>
 	<string name="should_allow_permission">Use \"App Settings -> Permission Settings\" to enable storage permission</string>
 	<string name="topic">Topic</string>
-	<string name="font_zoom_in">ZoomIn</string>
-	<string name="font_zoom_out">ZoomOut</string>
+	<string name="font_zoom_in">Zoom In</string>
+	<string name="font_zoom_out">Zoom Out</string>
 	<string name="read_pages">Reading Progress</string>
 	<string name="setting">Setting</string>
+	<string name="index">Index</string>
 </resources>
