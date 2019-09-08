@@ -15,5 +15,12 @@
 	<string name="font_zoom_out">Zoom Out</string>
 	<string name="read_pages">Reading Progress</string>
 	<string name="setting">Setting</string>
+	<string name="options">Options</string>
 	<string name="index">Index</string>
+	<string name="prev_topic">Next Topic</string>
+	<string name="next_topic">Prev Topic</string>
+	<string name="font_size">Font Size</string>
+	<string name="scene">Scene</string>
+	<string name="sunshine_mode">Sunshine</string>
+	<string name="eye_care_mode">Eye Care</string>
 </resources>

@@ -50,7 +50,7 @@ class BookListAdapter(
 		}
 		val intent = Intent(context, BookActivity::class.java)
 		intent.putExtra("key", item.key)
-		context.startActivity(intent)
+		context.startActivityForResult(intent, 2)
 //		context.overridePendingTransition(R.anim.right_in,R.anim.left_out)
 	}
 	private var data: List<App.FileSummary>? = null
@@ -70,11 +70,7 @@ class BookListAdapter(
 	override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
 		val item = data!![position]
 		var view: SwipeRevealLayout = if (convertView != null) {
-			if (convertView.tag == item.key) {
-				return convertView as SwipeRevealLayout
-			} else {
-				convertView as SwipeRevealLayout
-			}
+			convertView as SwipeRevealLayout
 		} else {
 			inflater.inflate(R.layout.book_item, null) as SwipeRevealLayout
 		}

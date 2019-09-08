@@ -15,8 +15,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.R
+import com.github.thorqin.reader.activities.book.BookActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
+import java.lang.Exception
 import java.util.*
 import kotlin.collections.ArrayList
 import java.text.Collator
@@ -55,6 +57,12 @@ class MainActivity : AppCompatActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 
+		if (app.config.lastRead != null && app.config.files.containsKey(app.config.lastRead!!)) {
+			val intent = Intent(this, BookActivity::class.java)
+			intent.putExtra("key", app.config.lastRead)
+			startActivityForResult(intent, 2)
+		}
+
 		requestWindowFeature(Window.FEATURE_NO_TITLE)
 		setContentView(R.layout.activity_main)
 		setSupportActionBar(toolbar)
@@ -69,6 +77,7 @@ class MainActivity : AppCompatActivity() {
 		}
 
 		fileList.adapter = bookAdapter
+
 
 		showFiles()
 	}
@@ -116,49 +125,54 @@ class MainActivity : AppCompatActivity() {
 		buttonBar.visibility = GONE
 		loadingBar.visibility = VISIBLE
 
-
 		var rootPathLength = 0
 		val timer = Timer()
+		var found = ArrayList<File>()
 		val thread = Thread {
 			try {
-				app.config.files.forEach {
-					if (!File(it.key).exists()) {
-						app.config.files.remove(it.key)
-					}
-				}
-
-				var found = ArrayList<File>()
 				var p = Environment.getExternalStorageDirectory()
 				rootPathLength = p.absolutePath.length
 				if (p.isDirectory) {
 					searchPath(p, found, 0)
 				}
-				found.forEach {
-					val key = App.digest(it.absolutePath)
-					var fc = app.config.files[key]
-					if (fc == null) {
-						fc = App.FileSummary()
-						fc.key = key
-						fc.path = it.absolutePath
-						fc.name = it.nameWithoutExtension
-						fc.totalLength = it.length()
-						app.config.files[key] = fc
-					} else {
-						if (fc.totalLength != it.length()) {
-							app.removeBook(key)
-							fc = App.FileSummary()
-							fc.path = it.absolutePath
-							fc.name = it.nameWithoutExtension
-							fc.totalLength = it.length()
-							app.config.files[key] = fc
-						}
-					}
-				}
-				app.saveConfig()
+			} catch (e: Exception) {
+				System.err.println("Search error: ${e.message}")
 			} finally {
 				timer.cancel()
 				searching = false
 				runOnUiThread {
+					found.forEach {
+						val key = App.digest(it.absolutePath)
+						var fc = app.config.files[key]
+						if (fc == null) {
+							fc = App.FileSummary()
+							fc.key = key
+							fc.path = it.absolutePath
+							fc.name = it.nameWithoutExtension
+							fc.totalLength = it.length()
+							app.config.files[key] = fc
+						} else {
+							if (fc.totalLength != it.length()) {
+								app.removeBook(key)
+								fc = App.FileSummary()
+								fc.path = it.absolutePath
+								fc.name = it.nameWithoutExtension
+								fc.totalLength = it.length()
+								app.config.files[key] = fc
+							}
+						}
+					}
+
+					val removeKeys = arrayListOf<String>()
+					app.config.files.forEach {
+						if (!File(it.value.path).exists()) {
+							removeKeys.add(it.key)
+						}
+					}
+					for (k in removeKeys)
+						app.config.files.remove(k)
+
+					app.saveConfig()
 					showFiles()
 				}
 			}
@@ -226,7 +240,7 @@ class MainActivity : AppCompatActivity() {
 			})
 			bookAdapter.close()
 			bookAdapter.update(list)
-
+			fileList.invalidate()
 		}
 	}
 
@@ -270,6 +284,10 @@ class MainActivity : AppCompatActivity() {
 		super.onActivityResult(requestCode, resultCode, data)
 		if (requestCode == 1) {
 			searchBooks()
+		} else if (requestCode == 2) {
+			showFiles()
+			app.config.lastRead = null
+			app.saveConfig()
 		}
 	}
 

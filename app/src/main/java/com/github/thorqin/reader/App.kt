@@ -117,10 +117,12 @@ class App : Application() {
 			if (chapters.size == 0 || chapter < 0 || chapter >= chapters.size) {
 				return ""
 			}
+			@Suppress("NAME_SHADOWING")
 			val chapter = chapters[chapter]
 			if (chapter.pages.size == 0 || page < 0 || page >= chapter.pages.size) {
 				return ""
 			}
+			@Suppress("NAME_SHADOWING")
 			val page = chapter.pages[page]
 			file.inputStream().use {
 				it.reader(Charset.forName(encoding)).use {
@@ -165,11 +167,11 @@ class App : Application() {
 		val desc: String
 			get() {
 				var p = if (totalLength > 0L) {
-					floor(progress * 10000L / 100).toInt()
+					floor(progress * 10000f) / 100
 				} else {
-					0
+					0f
 				}
-				return "大小：" + ((totalLength.toDouble() / 1024 / 1024 * 100).roundToInt() / 100.0) + "M  阅读：" + p + "%"
+				return "大小：${(totalLength.toDouble() / 1024 / 1024 * 100).roundToInt() / 100.0}M  阅读：$p%"
 			}
 	}
 
@@ -178,11 +180,13 @@ class App : Application() {
 		var fontSize = 24
 		var lastRead: String? = null
 		var topicRule = TOPIC_RULE
-
+		var sunshineMode = false
+		var eyeCareMode = false
 	}
 
 	companion object {
-		val TOPIC_RULE = "^\\s*(第\\s*[0-9零一二三四五六七八九十百千万]+\\s*[章节篇部][、，\\s]|[零一二三四五六七八九十百千万]\\s*[、，]\\s*.+$)"
+		val TOPIC_RULE =
+			"^\\s*(?:第\\s*[0-9零一二三四五六七八九十百千万]+\\s*[章节篇部][、，\\s]|(?:[0-9]+|[零一二三四五六七八九十百千万]+)[、，\\s]\\S+)"
 		private val HEX_DIGITS =
 			charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
 
@@ -341,7 +345,7 @@ class App : Application() {
 		return detail
 	}
 
-	fun saveFileConfig(fileInfo: FileDetail, key: String) {
+	fun saveFileIndex(fileInfo: FileDetail, key: String) {
 		try {
 			val path = filesDir.resolve("books")
 			if (!path.exists()) {
@@ -350,9 +354,9 @@ class App : Application() {
 				path.delete()
 				path.mkdir()
 			}
-			val stateFile = path.resolve("$key.json")
-			val content = Json().toJson(fileInfo)
-			FileUtils.writeStringToFile(stateFile, content, "utf-8")
+//			val stateFile = path.resolve("$key.json")
+//			val content = Json().toJson(fileInfo)
+//			FileUtils.writeStringToFile(stateFile, content, "utf-8")
 
 			val chaptersFile = path.resolve("$key-chapters.json")
 			FileUtils.writeStringToFile(chaptersFile, fileInfo.chapterJson, "utf-8")

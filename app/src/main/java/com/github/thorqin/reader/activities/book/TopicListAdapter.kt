@@ -10,7 +10,11 @@ import com.github.thorqin.reader.App
 import com.github.thorqin.reader.R
 
 class TopicListAdapter(val context: Context, var chapters: ArrayList<App.Chapter>): BaseAdapter() {
-
+	var readChapter: Int = 0
+		set(value) {
+			field = value
+			this.notifyDataSetChanged()
+		}
 	fun update(chapters: ArrayList<App.Chapter>) {
 		this.chapters = chapters
 		notifyDataSetChanged()
@@ -23,12 +27,23 @@ class TopicListAdapter(val context: Context, var chapters: ArrayList<App.Chapter
 		val item = chapters!![position]
 		var view: TextView = if (convertView != null) {
 			if (convertView.tag == position) {
+				if (position == readChapter) {
+					convertView.setBackgroundColor(context.getColor(R.color.colorAccent))
+				} else {
+					convertView.setBackgroundColor(context.getColor(R.color.colorWorkspace))
+				}
 				return convertView
 			} else {
 				convertView as TextView
 			}
 		} else {
 			inflater.inflate(R.layout.topic_list_item, null) as TextView
+		}
+
+		if (position == readChapter) {
+			view.setBackgroundColor(context.getColor(R.color.colorAccent))
+		} else {
+			view.setBackgroundColor(context.getColor(R.color.colorWorkspace))
 		}
 		view.tag = position
 		view.text = item.name

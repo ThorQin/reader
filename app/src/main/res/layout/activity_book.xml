@@ -12,6 +12,7 @@
 		android:layout_height="match_parent"
 		tools:context=".activities.book.BookActivity">
 
+		<!-- Tool bar -->
 		<com.google.android.material.appbar.AppBarLayout
 			android:id="@+id/appBar"
 			android:layout_width="match_parent"
@@ -28,6 +29,7 @@
 
 		</com.google.android.material.appbar.AppBarLayout>
 
+		<!-- Buffer View -->
 		<com.github.thorqin.reader.activities.book.BookView
 			android:id="@+id/bufferView"
 			android:layout_width="match_parent"
@@ -35,7 +37,7 @@
 			android:theme="@style/BookPage"
 			android:visibility="invisible" />
 
-
+		<!-- Book Pages -->
 		<FrameLayout
 			android:id="@+id/flipper"
 			android:layout_width="match_parent"
@@ -58,6 +60,41 @@
 
 		</FrameLayout>
 
+		<!-- Show Page No On Dragging -->
+		<FrameLayout
+			android:id="@+id/pageNo"
+			android:visibility="gone"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent">
+			<TextView
+				android:id="@+id/pageNoText"
+				android:padding="20dp"
+				android:textSize="30dp"
+				android:layout_gravity="center"
+				android:background="@color/colorWorkspaceHighlight"
+				android:textColor="@color/colorBlack"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				/>
+		</FrameLayout>
+
+		<!-- Brightness Switch Button -->
+		<com.google.android.material.floatingactionbutton.FloatingActionButton
+			android:id="@+id/floatButton"
+			android:alpha="0"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			app:layout_anchor="@id/footBar"
+			android:layout_marginEnd="20dp"
+			android:clickable="true"
+			android:focusable="true"
+			android:translationY="-15dp"
+			app:layout_anchorGravity="top|end"
+			android:src="@drawable/ic_brightness_2_white_24dp"
+			android:visibility="gone"
+			/>
+
+		<!-- Foot Bar -->
 		<LinearLayout
 			android:id="@+id/footBar"
 			android:layout_width="match_parent"
@@ -68,51 +105,49 @@
 			android:orientation="vertical"
 			android:paddingTop="1dp">
 
-			<TextView
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				android:padding="10dp"
-
-				android:text="@string/read_pages"
-				android:textColor="@color/colorWhite" />
-
 			<LinearLayout
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:orientation="horizontal"
+				style="?android:attr/buttonBarStyle"
+				android:paddingTop="15dp"
+				android:paddingStart="5dp"
+				android:paddingEnd="15dp"
+				android:gravity="center_vertical"
+				>
 
-				android:padding="5dp">
-
-				<TextView
+				<Button
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:padding="10dp"
-					android:text="0%"
+					android:text="@string/prev_topic"
+					style="?android:attr/buttonBarButtonStyle"
+					android:theme="@style/BookSettingButton"
 					android:textColor="@color/colorWhite" />
 
 				<SeekBar
 					android:id="@+id/seekBar"
 					android:layout_width="0dp"
 					android:layout_height="30dp"
-					android:layout_marginTop="5dp"
 					android:layout_weight="1"
 					android:progressBackgroundTint="@color/colorWhite" />
 
-				<TextView
+				<Button
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:padding="10dp"
-					android:text="100%"
+					android:text="@string/next_topic"
+					style="?android:attr/buttonBarButtonStyle"
+					android:theme="@style/BookSettingButton"
 					android:textColor="@color/colorWhite" />
 			</LinearLayout>
 
 			<LinearLayout
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-
-
 				android:orientation="horizontal"
-				android:paddingTop="10dp"
+				android:paddingTop="0dp"
+				style="?android:attr/buttonBarStyle"
 				android:paddingBottom="10dp">
 
 				<Button
@@ -120,29 +155,29 @@
 					android:layout_width="0dp"
 					android:layout_height="match_parent"
 					android:layout_weight="1"
-					android:background="@drawable/book_setting_button_bg"
 					android:drawableTop="@drawable/ic_toc_white_24dp"
 					android:text="@string/topic"
+					style="?android:attr/buttonBarButtonStyle"
 					android:theme="@style/BookSettingButton" />
 
 				<Button
-					android:id="@+id/fontZoomIn"
+					android:id="@+id/fontSize"
 					android:layout_width="0dp"
 					android:layout_height="match_parent"
 					android:layout_weight="1"
-					android:background="@drawable/book_setting_button_bg"
-					android:drawableTop="@drawable/ic_zitifangda"
-					android:text="@string/font_zoom_in"
+					android:drawableTop="@drawable/ic_format_size_white_24dp"
+					android:text="@string/font_size"
+					style="?android:attr/buttonBarButtonStyle"
 					android:theme="@style/BookSettingButton" />
 
 				<Button
-					android:id="@+id/fontZoomOut"
+					android:id="@+id/brightness"
 					android:layout_width="0dp"
 					android:layout_height="match_parent"
 					android:layout_weight="1"
-					android:background="@drawable/book_setting_button_bg"
-					android:drawableTop="@drawable/ic_zitisuoxiao"
-					android:text="@string/font_zoom_out"
+					android:drawableTop="@drawable/ic_wb_sunny_white_24dp"
+					android:text="@string/scene"
+					style="?android:attr/buttonBarButtonStyle"
 					android:theme="@style/BookSettingButton" />
 
 				<Button
@@ -150,14 +185,55 @@
 					android:layout_width="0dp"
 					android:layout_height="match_parent"
 					android:layout_weight="1"
-					android:background="@drawable/book_setting_button_bg"
-					android:drawableTop="@drawable/ic_more_vert_white_24dp"
-					android:text="@string/setting"
+					android:drawableTop="@drawable/ic_more_horiz_white_24dp"
+					android:text="@string/options"
+					style="?android:attr/buttonBarButtonStyle"
 					android:theme="@style/BookSettingButton" />
 
 			</LinearLayout>
 		</LinearLayout>
 
+		<!-- Scene Mode Bar -->
+		<LinearLayout
+			android:id="@+id/sceneBar"
+			android:orientation="horizontal"
+			android:layout_gravity="bottom"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:gravity="center"
+			android:paddingTop="20dp"
+			android:paddingBottom="20dp"
+			android:background="@color/colorWorkspace">
+
+			<Button
+				android:drawableLeft="@drawable/ic_wb_sunny_white_24dp"
+				android:id="@+id/sunshineMode"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:background="@drawable/radius_button_normal"
+				android:text="@string/sunshine_mode"
+				android:textColor="@color/colorWhite"
+				android:paddingStart="20dp"
+				android:paddingEnd="20dp"
+				android:layout_margin="20dp"
+				android:textSize="20dp"
+				tools:ignore="SpUsage" />
+
+			<Button
+				android:drawableLeft="@drawable/ic_remove_red_eye_white_24dp"
+				android:id="@+id/eyeCareMode"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:background="@drawable/radius_button_checked"
+				android:text="@string/eye_care_mode"
+				android:textColor="@color/colorWhite"
+				android:paddingStart="20dp"
+				android:paddingEnd="20dp"
+				android:layout_margin="20dp"
+				android:textSize="20dp"
+				tools:ignore="SpUsage" />
+
+		</LinearLayout>
 
 	</androidx.coordinatorlayout.widget.CoordinatorLayout>
 

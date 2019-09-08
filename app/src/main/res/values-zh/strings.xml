@@ -15,5 +15,12 @@
 	<string name="font_zoom_out">缩小</string>
 	<string name="read_pages">阅读进度</string>
 	<string name="setting">设置</string>
+	<string name="options">选项</string>
 	<string name="index">目录</string>
+	<string name="prev_topic">上一章</string>
+	<string name="next_topic">下一章</string>
+	<string name="font_size">字体</string>
+	<string name="scene">场景</string>
+	<string name="sunshine_mode">阳光模式</string>
+	<string name="eye_care_mode">护眼模式</string>
 </resources>

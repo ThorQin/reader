@@ -16,6 +16,7 @@ import android.os.Looper
 import android.view.Gravity
 import android.view.View.*
 import android.widget.SeekBar
+import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.github.thorqin.reader.App
 import java.io.File
@@ -40,6 +41,7 @@ class BookActivity : AppCompatActivity() {
 	private var atBegin = false
 	private var atEnd = false
 	private var showActionBar = false
+	private var showSceneBar = false
 
 	private lateinit var handler: Handler
 
@@ -89,7 +91,36 @@ class BookActivity : AppCompatActivity() {
 		topicButton.setOnClickListener {
 			toggleActionBar()
 			drawerBox.openDrawer(Gravity.LEFT, true)
+			(topicList.adapter as TopicListAdapter).readChapter = fileInfo.readChapter
+			topicList.requestLayout()
+			topicList.setSelection(fileInfo.readChapter)
 		}
+
+		brightness.setOnClickListener {
+			toggleActionBar {
+				toggleSceneBar()
+			}
+		}
+
+		floatButton.setOnClickListener {
+			app.config.sunshineMode = sunshineMode.tag != R.drawable.radius_button_checked
+			applySceneMode()
+			app.saveConfig()
+		}
+
+		sunshineMode.setOnClickListener {
+			app.config.sunshineMode = sunshineMode.tag != R.drawable.radius_button_checked
+			applySceneMode()
+			app.saveConfig()
+		}
+
+		eyeCareMode.setOnClickListener {
+			app.config.eyeCareMode = eyeCareMode.tag != R.drawable.radius_button_checked
+			applySceneMode()
+			app.saveConfig()
+		}
+
+		applySceneMode()
 
 		summary = app.config.files[key] as App.FileSummary
 		toolbar.title = summary.name
@@ -99,16 +130,18 @@ class BookActivity : AppCompatActivity() {
 		// supportActionBar?.hide()
 		appBar.visibility = INVISIBLE
 		footBar.visibility = INVISIBLE
+		sceneBar.visibility = INVISIBLE
 		handler.postDelayed({
 			appBar.translationY = -appBar.height.toFloat()
 			appBar.visibility = GONE
 			footBar.translationY = footBar.height.toFloat()
 			footBar.visibility = GONE
+			sceneBar.translationY = sceneBar.height.toFloat()
+			sceneBar.visibility = GONE
 		}, 50)
 
-
 		bufferView.addOnLayoutChangeListener {
-			v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+			_, left, top, right, bottom, _, _, _, _ ->
 			boxWidth = flipper.measuredWidth.toFloat()
 			println("boxWidth: $boxWidth")
 			val newW = right - left
@@ -133,7 +166,10 @@ class BookActivity : AppCompatActivity() {
 		flipper.setOnTouchListener { _, event ->
 			when (event.action ) {
 				MotionEvent.ACTION_DOWN -> {
-					if (showActionBar) {
+					if (showSceneBar) {
+						toggleSceneBar()
+						false
+					} else if (showActionBar) {
 						toggleActionBar()
 						false
 					} else {
@@ -245,14 +281,15 @@ class BookActivity : AppCompatActivity() {
 
 		seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
 			override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
-
+				pageNoText.text = (seekBar.progress + 1).toString()
 			}
 
 			override fun onStartTrackingTouch(p0: SeekBar?) {
-
+				pageNo.visibility = VISIBLE
 			}
 
 			override fun onStopTrackingTouch(p0: SeekBar?) {
+				pageNo.visibility = GONE
 				fileInfo.updateReadPage(seekBar.progress)
 				showContent(true)
 			}
@@ -264,11 +301,90 @@ class BookActivity : AppCompatActivity() {
 		openBook()
 	}
 
+
+	private fun applySceneMode() {
+		val sunshine = if (app.config.sunshineMode) R.drawable.radius_button_checked else R.drawable.radius_button_normal
+		sunshineMode.setBackgroundResource(sunshine)
+		sunshineMode.tag = sunshine
+
+		val eyeCare = if (app.config.eyeCareMode) R.drawable.radius_button_checked else R.drawable.radius_button_normal
+		eyeCareMode.setBackgroundResource(eyeCare)
+		eyeCareMode.tag = eyeCare
+
+		var drawable = if (app.config.sunshineMode) {
+			ContextCompat.getDrawable(this, R.drawable.ic_wb_sunny_white_24dp)
+		} else {
+			ContextCompat.getDrawable(this, R.drawable.ic_brightness_2_white_24dp)
+		}
+		floatButton.setImageDrawable(drawable)
+
+		if (floatButton.isShown) {
+			floatButton.hide()
+			floatButton.show()
+		}
+
+
+
+		val color = if (app.config.sunshineMode) {
+			if (app.config.eyeCareMode) {
+				"#ffff80"
+			} else {
+				"#ffffff"
+			}
+		} else {
+			if (app.config.eyeCareMode) {
+				"#aaaa40"
+			} else {
+				"#aaaaaa"
+			}
+		}
+
+		for (i in 0 until flipper.childCount) {
+			val bookView = flipper.getChildAt(i) as BookView
+			bookView.textColor = color
+		}
+	}
+
+	private fun toggleSceneBar(callback: (() -> Unit)? = null) {
+		val anim = ValueAnimator()
+		if (!showSceneBar) {
+			sceneBar.visibility = VISIBLE
+			anim.setFloatValues(1f, 0f)
+		} else {
+			anim.setFloatValues(0f, 1f)
+		}
+		anim.duration = 200
+		anim.addUpdateListener {
+			val value = anim.animatedValue as Float
+			sceneBar.translationY = sceneBar.height * value
+		}
+		anim.addListener(object: Animator.AnimatorListener {
+			override fun onAnimationRepeat(p0: Animator?) {}
+			override fun onAnimationEnd(p0: Animator?) {
+				if (!showSceneBar) {
+					sceneBar.translationY = 0f
+					showSceneBar = true
+					callback?.invoke()
+				} else {
+					sceneBar.visibility = GONE
+					showSceneBar = false
+					callback?.invoke()
+				}
+			}
+
+			override fun onAnimationCancel(p0: Animator?) {}
+
+			override fun onAnimationStart(p0: Animator?) {}
+		})
+		anim.start()
+	}
+
 	private fun toggleActionBar(callback: (() -> Unit)? = null) {
 		val anim = ValueAnimator()
 		if (!showActionBar) {
 			appBar.visibility = VISIBLE
 			footBar.visibility = VISIBLE
+			floatButton.show()
 			anim.setFloatValues(1f, 0f)
 		} else {
 			anim.setFloatValues(0f, 1f)
@@ -278,6 +394,7 @@ class BookActivity : AppCompatActivity() {
 			val value = anim.animatedValue as Float
 			footBar.translationY = footBar.height * value
 			appBar.translationY = -appBar.height * value
+			floatButton.alpha = 1 - value
 		}
 		anim.addListener(object: Animator.AnimatorListener {
 			override fun onAnimationRepeat(p0: Animator?) {}
@@ -288,6 +405,7 @@ class BookActivity : AppCompatActivity() {
 					showActionBar = true
 					callback?.invoke()
 				} else {
+					floatButton.hide()
 					appBar.visibility = GONE
 					footBar.translationY = -appBar.height.toFloat()
 					footBar.visibility = GONE
@@ -434,7 +552,7 @@ class BookActivity : AppCompatActivity() {
 				next.chapterPage)
 		}
 		summary.lastReadTime = Date().time
-		summary.progress = (fileInfo.readPage + 1) / fileInfo.totalPages.toFloat()
+		summary.progress = (fileInfo.readPage + 1).toFloat() / fileInfo.totalPages
 		handler.postDelayed( {
 			app.saveFileState(fileInfo, fileInfo.key)
 			app.saveConfig()
@@ -617,6 +735,7 @@ class BookActivity : AppCompatActivity() {
 			fileInfo.screenWidth = width
 			fileInfo.screenHeight = height
 			seekBar.max = fileInfo.totalPages - 1
+			app.saveFileIndex(fileInfo, summary.key)
 			showContent(true)
 			val adapter = TopicListAdapter(this, fileInfo.chapters)
 			adapter.onSelectTopic = this::onSelectTopic

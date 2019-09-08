@@ -152,7 +152,8 @@ class BookView : View {
 			return
 		}
 
-		val title = if (chapterName.isEmpty()) this.bookName else chapterName
+		val caption = if (chapterName.isEmpty()) this.bookName else chapterName
+		val title = if (pageIndex == 0) this.bookName else caption
 		canvas.drawText(title , paintLeft, startY.toFloat() + 2 * pxPerDp, descPaint)
 		canvas.drawText(this.pageNo, paintLeft + pxPerDp * 20, paintTop + paintHeight + startY.toFloat() - 5 * pxPerDp, descPaint)
 
@@ -160,7 +161,7 @@ class BookView : View {
 		canvas.drawText(this.progressInfo, paintWidth - descWidth - pxPerDp * 20, paintTop + paintHeight + startY.toFloat() - 5 * pxPerDp, descPaint)
 
 		if (pageIndex == 0) {
-			drawTitle(canvas, title)
+			drawTitle(canvas, caption)
 		}
 
 		val totalLines = floor(paintHeight.toDouble() / lh).toInt()
