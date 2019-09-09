@@ -112,6 +112,30 @@ class App : Application() {
 			}
 		}
 
+		fun prevTopic() {
+			if (readChapter > 0) {
+				readChapter--
+				readPageOfChapter = 0
+				var sum = 0
+				for (i in 0 until readChapter - 1) {
+					sum += chapters[i].pages.size
+				}
+				readPage = sum
+			}
+		}
+
+		fun nextTopic() {
+			if (readChapter < chapters.size - 1) {
+				readChapter++
+				readPageOfChapter = 0
+				var sum = 0
+				for (i in 0 until readChapter - 1) {
+					sum += chapters[i].pages.size
+				}
+				readPage = sum
+			}
+		}
+
 		fun getContent(chapter: Int, page: Int): String {
 			var file = File(path)
 			if (chapters.size == 0 || chapter < 0 || chapter >= chapters.size) {

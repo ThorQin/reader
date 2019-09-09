@@ -42,6 +42,7 @@ class BookActivity : AppCompatActivity() {
 	private var atEnd = false
 	private var showActionBar = false
 	private var showSceneBar = false
+	private var showFontSizeBar = false
 
 	private lateinit var handler: Handler
 
@@ -102,6 +103,33 @@ class BookActivity : AppCompatActivity() {
 			}
 		}
 
+		fontSize.setOnClickListener {
+			toggleActionBar {
+				toggleFontSizeBar()
+			}
+		}
+
+		smallSize.setOnClickListener {
+			if (app.config.fontSize > 22) {
+				app.config.fontSize = 22
+				resizeFont()
+			}
+		}
+
+		normalSize.setOnClickListener {
+			if (app.config.fontSize <= 22 || app.config.fontSize >= 26) {
+				app.config.fontSize = 24
+				resizeFont()
+			}
+		}
+
+		bigSize.setOnClickListener {
+			if (app.config.fontSize < 26) {
+				app.config.fontSize = 26
+				resizeFont()
+			}
+		}
+
 		floatButton.setOnClickListener {
 			app.config.sunshineMode = sunshineMode.tag != R.drawable.radius_button_checked
 			applySceneMode()
@@ -131,6 +159,7 @@ class BookActivity : AppCompatActivity() {
 		appBar.visibility = INVISIBLE
 		footBar.visibility = INVISIBLE
 		sceneBar.visibility = INVISIBLE
+		fontSizeBar.visibility = INVISIBLE
 		handler.postDelayed({
 			appBar.translationY = -appBar.height.toFloat()
 			appBar.visibility = GONE
@@ -138,6 +167,8 @@ class BookActivity : AppCompatActivity() {
 			footBar.visibility = GONE
 			sceneBar.translationY = sceneBar.height.toFloat()
 			sceneBar.visibility = GONE
+			fontSizeBar.translationY = fontSizeBar.height.toFloat()
+			fontSizeBar.visibility = GONE
 		}, 50)
 
 		bufferView.addOnLayoutChangeListener {
@@ -166,7 +197,10 @@ class BookActivity : AppCompatActivity() {
 		flipper.setOnTouchListener { _, event ->
 			when (event.action ) {
 				MotionEvent.ACTION_DOWN -> {
-					if (showSceneBar) {
+					if (showFontSizeBar) {
+						toggleFontSizeBar()
+						false
+					} else if (showSceneBar) {
 						toggleSceneBar()
 						false
 					} else if (showActionBar) {
@@ -296,7 +330,15 @@ class BookActivity : AppCompatActivity() {
 
 		})
 
+		prevTopic.setOnClickListener {
+			fileInfo.prevTopic()
+			showContent(true)
+		}
 
+		nextTopic.setOnClickListener{
+			fileInfo.nextTopic()
+			showContent(true)
+		}
 
 		openBook()
 	}
@@ -343,6 +385,41 @@ class BookActivity : AppCompatActivity() {
 			val bookView = flipper.getChildAt(i) as BookView
 			bookView.textColor = color
 		}
+	}
+
+
+	private fun toggleFontSizeBar(callback: (() -> Unit)? = null) {
+		val anim = ValueAnimator()
+		if (!showFontSizeBar) {
+			fontSizeBar.visibility = VISIBLE
+			anim.setFloatValues(1f, 0f)
+		} else {
+			anim.setFloatValues(0f, 1f)
+		}
+		anim.duration = 200
+		anim.addUpdateListener {
+			val value = anim.animatedValue as Float
+			fontSizeBar.translationY = fontSizeBar.height * value
+		}
+		anim.addListener(object: Animator.AnimatorListener {
+			override fun onAnimationRepeat(p0: Animator?) {}
+			override fun onAnimationEnd(p0: Animator?) {
+				if (!showFontSizeBar) {
+					fontSizeBar.translationY = 0f
+					showFontSizeBar = true
+					callback?.invoke()
+				} else {
+					fontSizeBar.visibility = GONE
+					showFontSizeBar = false
+					callback?.invoke()
+				}
+			}
+
+			override fun onAnimationCancel(p0: Animator?) {}
+
+			override fun onAnimationStart(p0: Animator?) {}
+		})
+		anim.start()
 	}
 
 	private fun toggleSceneBar(callback: (() -> Unit)? = null) {
@@ -574,18 +651,18 @@ class BookActivity : AppCompatActivity() {
 
 	private fun openBook() {
 		try {
-			val fontSize = app.config.fontSize.toFloat()
-			for (i in 0 until 3) {
-				(flipper.getChildAt(i) as BookView).textSize = fontSize
-			}
-			bufferView.textSize = fontSize
 			fileInfo = app.getFileConfig(summary.key)
-			seekBar.max = fileInfo.totalPages - 1
 			app.config.lastRead = summary.key
-			showContent(true)
 			val adapter = TopicListAdapter(this, fileInfo.chapters)
 			adapter.onSelectTopic = this::onSelectTopic
 			topicList.adapter = adapter
+			seekBar.max = fileInfo.totalPages - 1
+			if (fileInfo.fontSize != app.config.fontSize) {
+				resizeFont()
+				return
+			}
+			applySize()
+			showContent(true)
 		} catch (e: Exception) {
 			println("Open index file failed, need to initialize!")
 		}
@@ -746,5 +823,34 @@ class BookActivity : AppCompatActivity() {
 		}
 	}
 
+	private fun applySize() {
+		smallSize.setBackgroundResource(R.drawable.radius_button_normal)
+		normalSize.setBackgroundResource(R.drawable.radius_button_normal)
+		bigSize.setBackgroundResource(R.drawable.radius_button_normal)
+
+		if (app.config.fontSize <= 22) {
+			smallSize.setBackgroundResource(R.drawable.radius_button_checked)
+			app.config.fontSize = 22
+
+		} else if (app.config.fontSize > 22 && app.config.fontSize < 26) {
+			normalSize.setBackgroundResource(R.drawable.radius_button_checked)
+			app.config.fontSize = 24
+
+		} else {
+			bigSize.setBackgroundResource(R.drawable.radius_button_checked)
+			app.config.fontSize = 26
+
+		}
+		val fontSize = app.config.fontSize.toFloat()
+		for (i in 0 until 3) {
+			(flipper.getChildAt(i) as BookView).textSize = fontSize
+		}
+		bufferView.textSize = fontSize
+	}
+
+	private fun resizeFont() {
+		applySize()
+		showContent(true)
+	}
 
 }

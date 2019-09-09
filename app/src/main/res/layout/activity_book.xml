@@ -117,6 +117,7 @@
 				>
 
 				<Button
+					android:id="@+id/prevTopic"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:padding="10dp"
@@ -133,6 +134,7 @@
 					android:progressBackgroundTint="@color/colorWhite" />
 
 				<Button
+					android:id="@+id/nextTopic"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:padding="10dp"
@@ -186,7 +188,7 @@
 					android:layout_height="match_parent"
 					android:layout_weight="1"
 					android:drawableTop="@drawable/ic_more_horiz_white_24dp"
-					android:text="@string/options"
+					android:text="@string/more"
 					style="?android:attr/buttonBarButtonStyle"
 					android:theme="@style/BookSettingButton" />
 
@@ -196,40 +198,111 @@
 		<!-- Scene Mode Bar -->
 		<LinearLayout
 			android:id="@+id/sceneBar"
-			android:orientation="horizontal"
-			android:layout_gravity="bottom"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
+			android:layout_gravity="bottom"
+			android:background="@color/colorWorkspace"
 			android:gravity="center"
+			android:orientation="horizontal"
 			android:paddingTop="20dp"
 			android:paddingBottom="20dp"
-			android:background="@color/colorWorkspace">
+			android:visibility="invisible">
 
 			<Button
-				android:drawableLeft="@drawable/ic_wb_sunny_white_24dp"
 				android:id="@+id/sunshineMode"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
+				android:layout_marginStart="10dp"
+				android:layout_marginTop="20dp"
+				android:layout_marginEnd="10dp"
+				android:layout_marginBottom="20dp"
 				android:background="@drawable/radius_button_normal"
-				android:text="@string/sunshine_mode"
-				android:textColor="@color/colorWhite"
+				android:drawableLeft="@drawable/ic_wb_sunny_white_24dp"
 				android:paddingStart="20dp"
 				android:paddingEnd="20dp"
-				android:layout_margin="20dp"
+				android:text="@string/sunshine_mode"
+				android:textColor="@color/colorWhite"
 				android:textSize="20dp"
 				tools:ignore="SpUsage" />
 
 			<Button
-				android:drawableLeft="@drawable/ic_remove_red_eye_white_24dp"
 				android:id="@+id/eyeCareMode"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				android:background="@drawable/radius_button_checked"
-				android:text="@string/eye_care_mode"
-				android:textColor="@color/colorWhite"
+				android:layout_marginStart="10dp"
+				android:layout_marginTop="20dp"
+				android:layout_marginEnd="10dp"
+				android:layout_marginBottom="20dp"
+				android:background="@drawable/radius_button_normal"
+				android:drawableLeft="@drawable/ic_remove_red_eye_white_24dp"
 				android:paddingStart="20dp"
 				android:paddingEnd="20dp"
-				android:layout_margin="20dp"
+				android:text="@string/eye_care_mode"
+				android:textColor="@color/colorWhite"
+				android:textSize="20dp"
+				tools:ignore="SpUsage" />
+
+		</LinearLayout>
+
+
+		<!-- Font Size Mode Bar -->
+		<LinearLayout
+			android:id="@+id/fontSizeBar"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_gravity="bottom"
+			android:background="@color/colorWorkspace"
+			android:gravity="center"
+			android:orientation="horizontal"
+			android:paddingTop="20dp"
+			android:paddingBottom="20dp"
+			android:visibility="invisible">
+
+			<Button
+				android:id="@+id/smallSize"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="10dp"
+				android:layout_marginTop="20dp"
+				android:layout_marginEnd="10dp"
+				android:layout_marginBottom="20dp"
+				android:background="@drawable/radius_button_normal"
+				android:paddingStart="20dp"
+				android:paddingEnd="20dp"
+				android:text="@string/small"
+				android:textColor="@color/colorWhite"
+				android:textSize="20dp"
+				tools:ignore="SpUsage" />
+
+			<Button
+				android:id="@+id/normalSize"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="10dp"
+				android:layout_marginTop="20dp"
+				android:layout_marginEnd="10dp"
+				android:layout_marginBottom="20dp"
+				android:background="@drawable/radius_button_normal"
+				android:paddingStart="20dp"
+				android:paddingEnd="20dp"
+				android:text="@string/normal"
+				android:textColor="@color/colorWhite"
+				android:textSize="20dp"
+				tools:ignore="SpUsage" />
+
+			<Button
+				android:id="@+id/bigSize"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="10dp"
+				android:layout_marginTop="20dp"
+				android:layout_marginEnd="10dp"
+				android:layout_marginBottom="20dp"
+				android:background="@drawable/radius_button_normal"
+				android:paddingStart="20dp"
+				android:paddingEnd="20dp"
+				android:text="@string/big"
+				android:textColor="@color/colorWhite"
 				android:textSize="20dp"
 				tools:ignore="SpUsage" />
 
@@ -237,6 +310,7 @@
 
 	</androidx.coordinatorlayout.widget.CoordinatorLayout>
 
+	<!-- INDEX MENU -->
 	<LinearLayout
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"

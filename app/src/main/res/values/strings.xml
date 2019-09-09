@@ -23,4 +23,8 @@
 	<string name="scene">Scene</string>
 	<string name="sunshine_mode">Sunshine</string>
 	<string name="eye_care_mode">Eye Care</string>
+	<string name="small">Small</string>
+	<string name="normal">Normal</string>
+	<string name="big">Big</string>
+	<string name="more">More</string>
 </resources>

@@ -26,6 +26,7 @@
 
 
 		<activity
+			android:launchMode="singleTop"
 			android:name=".activities.book.BookActivity"
 			android:label=""
 			android:theme="@style/BookActivityTheme" />
