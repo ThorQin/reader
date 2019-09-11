@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
 
 
 	private fun searchPath(path: File, found: ArrayList<File>, level: Int) {
-		var files = path.listFiles() ?: return
+		val files = path.listFiles() ?: return
 		for (f in files) {
 			setScanFile(f.absolutePath)
 			if (f.isDirectory) {
@@ -127,10 +127,10 @@ class MainActivity : AppCompatActivity() {
 
 		var rootPathLength = 0
 		val timer = Timer()
-		var found = ArrayList<File>()
+		val found = ArrayList<File>()
 		val thread = Thread {
 			try {
-				var p = Environment.getExternalStorageDirectory()
+				val p = Environment.getExternalStorageDirectory()
 				rootPathLength = p.absolutePath.length
 				if (p.isDirectory) {
 					searchPath(p, found, 0)
@@ -196,7 +196,7 @@ class MainActivity : AppCompatActivity() {
 
 	private fun searchBooks() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			var i = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+			val i = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
 			if (i != PackageManager.PERMISSION_GRANTED) {
 				ActivityCompat.requestPermissions(
 					this,
@@ -253,7 +253,7 @@ class MainActivity : AppCompatActivity() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			if (requestCode == 1) {
 				if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-					var b = shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+					val b = shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)
 					if (!b) {
 						showOpenAppSetting()
 					}
@@ -273,9 +273,9 @@ class MainActivity : AppCompatActivity() {
 	}
 
 	private fun openSetting() {
-		var intent = Intent()
+		val intent = Intent()
 		intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-		var uri = Uri.fromParts("package", packageName, null)
+		val uri = Uri.fromParts("package", packageName, null)
 		intent.data = uri
 		startActivityForResult(intent, 1)
 	}

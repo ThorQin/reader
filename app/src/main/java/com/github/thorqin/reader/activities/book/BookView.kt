@@ -17,33 +17,34 @@ class BookView : View {
 		createPaint()
 	}
 
-	var text = ""
-	var bookName = ""
-	var chapterName = ""
-	var pageNo = ""
-	var progressInfo = ""
-	var pageIndex = 0
+	private var text = ""
+	private var bookName = ""
+	private var chapterName = ""
+	private var pageNo = ""
+	private var progressInfo = ""
+	private var pageIndex = 0
 
 	private lateinit var paint: Paint
 	private lateinit var descPaint: Paint
 	private lateinit var titlePaint: Paint
-	private var cw: Float = 0f
-	private var lh: Int = 0
-	private var paintWidth: Float = 0f
-	private var paintHeight: Float = 0f
-	private var paintLeft: Float = 0f
-	private var paintTop: Float = 0f
-	private var startY: Int = 0
-	private var pxPerDp: Int = 0
+	private var cw = 0f
+	private var lh = 0
+	private var paintWidth = 0f
+	private var paintHeight = 0f
+	private var paintLeft = 0f
+	private var paintTop = 0f
+	private var startY = 0
+	private var pxPerDp = 0
 
-	var textSize = 24f
+	var textSize = 24
 		set(value) {
 			field = value
 			createPaint()
+			initValues()
 			invalidate()
 		}
 
-	var descColor = "#666666"
+	private var descColor = "#666666"
 		set(value) {
 			field = value
 			createPaint()
@@ -77,7 +78,7 @@ class BookView : View {
 
 		paint = Paint()
 		paint.typeface = Typeface.MONOSPACE
-		paint.textSize = App.dip2px(context, textSize).toFloat()
+		paint.textSize = App.dip2px(context, textSize.toFloat()).toFloat()
 		paint.color = Color.parseColor(textColor)
 		paint.isAntiAlias = true
 
@@ -97,29 +98,33 @@ class BookView : View {
 	override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
 		super.onLayout(changed, left, top, right, bottom)
 		if (changed) {
-			barHeight = App.dip2px(context, 24f)
-			cw = ceil(paint.measureText(" "))
-			paintWidth = (width - paddingLeft - paddingRight).toFloat()
-			paintHeight = height - paddingTop - paddingBottom - barHeight * 2f
-			paintLeft = paddingLeft + (paintWidth % cw) / 2
-			paintTop = paddingTop + barHeight + (paintHeight % lh)
-
-			paint.getTextBounds("a中", 0, 2, _rect)
-			startY = -_rect.top
-			pxPerDp = App.dip2px(context, 1f)
-
-			titlePaint.getTextBounds("a中", 0, 2, _titleRect)
-			titleCw = ceil(titlePaint.measureText(" "))
+			initValues()
 		}
+	}
+
+	private fun initValues() {
+		barHeight = App.dip2px(context, 24f)
+		cw = ceil(paint.measureText(" "))
+		paintWidth = (width - paddingLeft - paddingRight).toFloat()
+		paintHeight = height - paddingTop - paddingBottom - barHeight * 2f
+		paintLeft = paddingLeft + (paintWidth % cw) / 2
+		paintTop = paddingTop + barHeight + (paintHeight % lh)
+
+		paint.getTextBounds("a中", 0, 2, _rect)
+		startY = -_rect.top
+		pxPerDp = App.dip2px(context, 1f)
+
+		titlePaint.getTextBounds("a中", 0, 2, _titleRect)
+		titleCw = ceil(titlePaint.measureText(" "))
 	}
 
 
 	private val zero = 0.toChar()
 
-	fun drawTitle(canvas: Canvas, title: String) {
+	private fun drawTitle(canvas: Canvas, title: String) {
 
 		var t = paintTop
-		var l = paintLeft
+		val l = paintLeft
 		val lh = _titleRect.bottom - _titleRect.top
 
 		var lw = 0f

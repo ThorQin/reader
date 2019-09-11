@@ -47,7 +47,7 @@ class BookActivity : AppCompatActivity() {
 	private lateinit var handler: Handler
 
 	private val app: App
-		get () {
+		get() {
 			return application as App
 		}
 
@@ -69,7 +69,7 @@ class BookActivity : AppCompatActivity() {
 
 		var surface: View? = null
 		drawerBox.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-		drawerBox.addDrawerListener(object: DrawerLayout.DrawerListener {
+		drawerBox.addDrawerListener(object : DrawerLayout.DrawerListener {
 			override fun onDrawerStateChanged(newState: Int) {}
 
 			override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
@@ -110,22 +110,22 @@ class BookActivity : AppCompatActivity() {
 		}
 
 		smallSize.setOnClickListener {
-			if (app.config.fontSize > 22) {
-				app.config.fontSize = 22
+			if (app.config.fontSize != App.FontSize.SMALL) {
+				app.config.fontSize = App.FontSize.SMALL
 				resizeFont()
 			}
 		}
 
 		normalSize.setOnClickListener {
-			if (app.config.fontSize <= 22 || app.config.fontSize >= 26) {
-				app.config.fontSize = 24
+			if (app.config.fontSize != App.FontSize.NORMAL) {
+				app.config.fontSize = App.FontSize.NORMAL
 				resizeFont()
 			}
 		}
 
 		bigSize.setOnClickListener {
-			if (app.config.fontSize < 26) {
-				app.config.fontSize = 26
+			if (app.config.fontSize != App.FontSize.BIG) {
+				app.config.fontSize = App.FontSize.BIG
 				resizeFont()
 			}
 		}
@@ -171,15 +171,15 @@ class BookActivity : AppCompatActivity() {
 			fontSizeBar.visibility = GONE
 		}, 50)
 
-		bufferView.addOnLayoutChangeListener {
-			_, left, top, right, bottom, _, _, _, _ ->
+		bufferView.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
 			boxWidth = flipper.measuredWidth.toFloat()
 			println("boxWidth: $boxWidth")
 			val newW = right - left
 			val newH = bottom - top
 			if (::fileInfo.isInitialized) {
 				if (fileInfo.screenWidth != newW && fileInfo.screenHeight != newH
-					&& newW != 0 && newH != 0) {
+					&& newW != 0 && newH != 0
+				) {
 					initBook(newW, newH)
 				}
 			} else {
@@ -191,24 +191,29 @@ class BookActivity : AppCompatActivity() {
 		}
 
 
-		var startX : Float? = null
+		var startX: Float? = null
 		var viewX: Float? = null
 		var moveDirection: Direction = Direction.LEFT
 		flipper.setOnTouchListener { _, event ->
-			when (event.action ) {
+			when (event.action) {
 				MotionEvent.ACTION_DOWN -> {
-					if (showFontSizeBar) {
-						toggleFontSizeBar()
-						false
-					} else if (showSceneBar) {
-						toggleSceneBar()
-						false
-					} else if (showActionBar) {
-						toggleActionBar()
-						false
-					} else {
-						startX = event.rawX
-						surface == null
+					when {
+						showFontSizeBar -> {
+							toggleFontSizeBar()
+							false
+						}
+						showSceneBar -> {
+							toggleSceneBar()
+							false
+						}
+						showActionBar -> {
+							toggleActionBar()
+							false
+						}
+						else -> {
+							startX = event.rawX
+							surface == null
+						}
 					}
 				}
 				MotionEvent.ACTION_MOVE -> {
@@ -298,7 +303,7 @@ class BookActivity : AppCompatActivity() {
 							}
 						}
 					} else {
-						if (startX != null && abs(event.rawX - startX!!) < 10 ) {
+						if (startX != null && abs(event.rawX - startX!!) < 10) {
 							// IS CLICK
 							if (startX!! > boxWidth / 4 && startX!! < boxWidth / 4 * 3) {
 								toggleActionBar()
@@ -313,7 +318,7 @@ class BookActivity : AppCompatActivity() {
 			}
 		}
 
-		seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+		seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
 			override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
 				pageNoText.text = (seekBar.progress + 1).toString()
 			}
@@ -324,7 +329,7 @@ class BookActivity : AppCompatActivity() {
 
 			override fun onStopTrackingTouch(p0: SeekBar?) {
 				pageNo.visibility = GONE
-				fileInfo.updateReadPage(seekBar.progress)
+				fileInfo.setNewReadPage(seekBar.progress)
 				showContent(true)
 			}
 
@@ -335,7 +340,7 @@ class BookActivity : AppCompatActivity() {
 			showContent(true)
 		}
 
-		nextTopic.setOnClickListener{
+		nextTopic.setOnClickListener {
 			fileInfo.nextTopic()
 			showContent(true)
 		}
@@ -345,15 +350,17 @@ class BookActivity : AppCompatActivity() {
 
 
 	private fun applySceneMode() {
-		val sunshine = if (app.config.sunshineMode) R.drawable.radius_button_checked else R.drawable.radius_button_normal
+		val sunshine =
+			if (app.config.sunshineMode) R.drawable.radius_button_checked else R.drawable.radius_button_normal
 		sunshineMode.setBackgroundResource(sunshine)
 		sunshineMode.tag = sunshine
 
-		val eyeCare = if (app.config.eyeCareMode) R.drawable.radius_button_checked else R.drawable.radius_button_normal
+		val eyeCare =
+			if (app.config.eyeCareMode) R.drawable.radius_button_checked else R.drawable.radius_button_normal
 		eyeCareMode.setBackgroundResource(eyeCare)
 		eyeCareMode.tag = eyeCare
 
-		var drawable = if (app.config.sunshineMode) {
+		val drawable = if (app.config.sunshineMode) {
 			ContextCompat.getDrawable(this, R.drawable.ic_wb_sunny_white_24dp)
 		} else {
 			ContextCompat.getDrawable(this, R.drawable.ic_brightness_2_white_24dp)
@@ -364,7 +371,6 @@ class BookActivity : AppCompatActivity() {
 			floatButton.hide()
 			floatButton.show()
 		}
-
 
 
 		val color = if (app.config.sunshineMode) {
@@ -401,7 +407,7 @@ class BookActivity : AppCompatActivity() {
 			val value = anim.animatedValue as Float
 			fontSizeBar.translationY = fontSizeBar.height * value
 		}
-		anim.addListener(object: Animator.AnimatorListener {
+		anim.addListener(object : Animator.AnimatorListener {
 			override fun onAnimationRepeat(p0: Animator?) {}
 			override fun onAnimationEnd(p0: Animator?) {
 				if (!showFontSizeBar) {
@@ -435,7 +441,7 @@ class BookActivity : AppCompatActivity() {
 			val value = anim.animatedValue as Float
 			sceneBar.translationY = sceneBar.height * value
 		}
-		anim.addListener(object: Animator.AnimatorListener {
+		anim.addListener(object : Animator.AnimatorListener {
 			override fun onAnimationRepeat(p0: Animator?) {}
 			override fun onAnimationEnd(p0: Animator?) {
 				if (!showSceneBar) {
@@ -473,7 +479,7 @@ class BookActivity : AppCompatActivity() {
 			appBar.translationY = -appBar.height * value
 			floatButton.alpha = 1 - value
 		}
-		anim.addListener(object: Animator.AnimatorListener {
+		anim.addListener(object : Animator.AnimatorListener {
 			override fun onAnimationRepeat(p0: Animator?) {}
 			override fun onAnimationEnd(p0: Animator?) {
 				if (!showActionBar) {
@@ -512,11 +518,12 @@ class BookActivity : AppCompatActivity() {
 	private fun moveViewTo(v: View, pos: Float, onEndCallback: () -> Unit) {
 		val transAnim = ObjectAnimator.ofFloat(v, "translationX", pos)
 		transAnim.duration = 100
-		transAnim.addListener( object: Animator.AnimatorListener {
+		transAnim.addListener(object : Animator.AnimatorListener {
 			override fun onAnimationRepeat(animation: Animator?) {}
 			override fun onAnimationEnd(animation: Animator?) {
 				onEndCallback()
 			}
+
 			override fun onAnimationCancel(animation: Animator?) {}
 			override fun onAnimationStart(animation: Animator?) {}
 		})
@@ -531,7 +538,12 @@ class BookActivity : AppCompatActivity() {
 	}
 
 
-	private class PageInfo(var text: String, var chapterName: String, var readPage: Int, var chapterPage: Int)
+	private class PageInfo(
+		var text: String,
+		var chapterName: String,
+		var readPage: Int,
+		var chapterPage: Int
+	)
 
 	private fun getPrevPageInfo(): PageInfo? {
 		if (fileInfo.chapters.size == 0) {
@@ -553,13 +565,17 @@ class BookActivity : AppCompatActivity() {
 				return null
 			}
 		}
-		return PageInfo(fileInfo.getContent(c, p),
-			fileInfo.chapters[c].name, fileInfo.readPage - 1, p)
+		return PageInfo(
+			fileInfo.getContent(c, p),
+			fileInfo.chapters[c].name, fileInfo.readPage - 1, p
+		)
 	}
 
 	private fun getCurrentPageInfo(): PageInfo {
-		return PageInfo(fileInfo.getContent(fileInfo.readChapter, fileInfo.readPageOfChapter),
-			fileInfo.chapters[fileInfo.readChapter].name, fileInfo.readPage, fileInfo.readPageOfChapter)
+		return PageInfo(
+			fileInfo.getContent(fileInfo.readChapter, fileInfo.readPageOfChapter),
+			fileInfo.chapters[fileInfo.readChapter].name, fileInfo.readPage, fileInfo.readPageOfChapter
+		)
 	}
 
 	private fun getNextPageInfo(): PageInfo? {
@@ -582,8 +598,10 @@ class BookActivity : AppCompatActivity() {
 				return null
 			}
 		}
-		return PageInfo(fileInfo.getContent(c, p),
-			fileInfo.chapters[c].name, fileInfo.readPage + 1, p)
+		return PageInfo(
+			fileInfo.getContent(c, p),
+			fileInfo.chapters[c].name, fileInfo.readPage + 1, p
+		)
 	}
 
 	private fun showContent(updateAll: Boolean) {
@@ -594,12 +612,13 @@ class BookActivity : AppCompatActivity() {
 		if (updateAll) {
 			val current = getCurrentPageInfo()
 			// currentView.text = currentText
-			currentView.setBookInfo(fileInfo.name,
+			currentView.setBookInfo(
+				fileInfo.name,
 				current.chapterName, current.text,
 				"${fileInfo.readPage + 1} / ${fileInfo.totalPages}",
 				"${floor((fileInfo.readPage + 1) / fileInfo.totalPages.toDouble() * 10000) / 100}%",
 				current.chapterPage
-				)
+			)
 		}
 
 		seekBar.progress = fileInfo.readPage
@@ -609,11 +628,13 @@ class BookActivity : AppCompatActivity() {
 		} else {
 			atBegin = false
 			//prevView.text = prevText
-			prevView.setBookInfo(fileInfo.name,
+			prevView.setBookInfo(
+				fileInfo.name,
 				prev.chapterName, prev.text,
-			"${prev.readPage + 1} / ${fileInfo.totalPages}",
-			"${floor((prev.readPage + 1) / fileInfo.totalPages.toDouble() * 10000) / 100}%",
-			prev.chapterPage)
+				"${prev.readPage + 1} / ${fileInfo.totalPages}",
+				"${floor((prev.readPage + 1) / fileInfo.totalPages.toDouble() * 10000) / 100}%",
+				prev.chapterPage
+			)
 		}
 
 		val next = getNextPageInfo()
@@ -622,15 +643,17 @@ class BookActivity : AppCompatActivity() {
 		} else {
 			atEnd = false
 			// nextView.text = nextText
-			nextView.setBookInfo(fileInfo.name,
+			nextView.setBookInfo(
+				fileInfo.name,
 				next.chapterName, next.text,
 				"${next.readPage + 1} / ${fileInfo.totalPages}",
 				"${floor((next.readPage + 1) / fileInfo.totalPages.toDouble() * 10000) / 100}%",
-				next.chapterPage)
+				next.chapterPage
+			)
 		}
 		summary.lastReadTime = Date().time
 		summary.progress = (fileInfo.readPage + 1).toFloat() / fileInfo.totalPages
-		handler.postDelayed( {
+		handler.postDelayed({
 			app.saveFileState(fileInfo, fileInfo.key)
 			app.saveConfig()
 		}, 50)
@@ -695,40 +718,49 @@ class BookActivity : AppCompatActivity() {
 
 			fun testEnd(c: Char?) {
 				if (!beginChapter) {
-					if (lineSize in 1..50) {
-						// match line content
-						if (pattern.matcher(line).find()) {
-							chapter.endPoint = lineStart
-							val str = content.subSequence(0, content.length - lineSize).trimEnd()
-							parseChapter(fileInfo, chapter, str, str.length)
-							chapter = App.Chapter()
-							chapter.name = line.trim().toString()
-							beginChapter = true
-							content.clear()
-							line.clear()
-						} else if (c != null) {
+					when {
+						lineSize in 1..50 -> // match line content
+							when {
+								pattern.matcher(line).find() -> {
+									chapter.endPoint = lineStart
+									val str = content.subSequence(0, content.length - lineSize).trimEnd()
+									parseChapter(chapter, str, str.length)
+									fileInfo.chapters.add(chapter)
+									chapter = App.Chapter()
+									chapter.name = line.trim().toString()
+									beginChapter = true
+									content.clear()
+									line.clear()
+								}
+								c != null -> {
+									content.append(c)
+									lineSize = 0
+									line.clear()
+								}
+								else -> {
+									chapter.endPoint = scan
+									val str = content.trimEnd()
+									parseChapter(chapter, str, str.length)
+									fileInfo.chapters.add(chapter)
+								}
+							}
+						c != null -> {
 							content.append(c)
 							lineSize = 0
 							line.clear()
-						} else {
+						}
+						else -> {
 							chapter.endPoint = scan
 							val str = content.trimEnd()
-							parseChapter(fileInfo, chapter, str, str.length)
+							parseChapter(chapter, str, str.length)
+							fileInfo.chapters.add(chapter)
 						}
-					} else if (c != null) {
-						content.append(c)
-						lineSize = 0
-						line.clear()
-					} else {
-						chapter.endPoint = scan
-						val str = content.trimEnd()
-						parseChapter(fileInfo, chapter, str, str.length)
 					}
 				}
 			}
 
 
-			while(true) {
+			while (true) {
 				val size = it.read(buffer, 0, 8192)
 				if (size <= 0) {
 					break
@@ -767,7 +799,11 @@ class BookActivity : AppCompatActivity() {
 		}
 	}
 
-	private fun parseChapter(fileInfo: App.FileDetail, chapter: App.Chapter, content: CharSequence, length: Int) {
+	private fun parseChapter(
+		chapter: App.Chapter,
+		content: CharSequence,
+		length: Int
+	) {
 		if (content.isEmpty() && chapter.name.isEmpty()) {
 			return
 		}
@@ -792,17 +828,18 @@ class BookActivity : AppCompatActivity() {
 			page.length = 0
 			chapter.pages.add(page)
 		}
-		fileInfo.chapters.add(chapter)
+
 	}
 
 	private fun initBook(width: Int, height: Int) {
-		bufferView.textSize = app.config.fontSize.toFloat()
+		bufferView.textSize = app.config.fontSize.value
 		val pattern: Pattern = try {
 			Pattern.compile(app.config.topicRule, Pattern.CASE_INSENSITIVE)
 		} catch (e: Exception) {
 			Pattern.compile(App.TOPIC_RULE, Pattern.CASE_INSENSITIVE)
 		}
 		try {
+			applySize()
 			val file = File(summary.path)
 			fileInfo = parseFile(file, pattern)
 			app.config.lastRead = summary.key
@@ -813,6 +850,7 @@ class BookActivity : AppCompatActivity() {
 			fileInfo.screenHeight = height
 			seekBar.max = fileInfo.totalPages - 1
 			app.saveFileIndex(fileInfo, summary.key)
+
 			showContent(true)
 			val adapter = TopicListAdapter(this, fileInfo.chapters)
 			adapter.onSelectTopic = this::onSelectTopic
@@ -820,6 +858,7 @@ class BookActivity : AppCompatActivity() {
 		} catch (e: Exception) {
 			System.err.println("Error: $e")
 			app.toast(getString(R.string.cannot_init_book))
+			finish()
 		}
 	}
 
@@ -828,29 +867,63 @@ class BookActivity : AppCompatActivity() {
 		normalSize.setBackgroundResource(R.drawable.radius_button_normal)
 		bigSize.setBackgroundResource(R.drawable.radius_button_normal)
 
-		if (app.config.fontSize <= 22) {
-			smallSize.setBackgroundResource(R.drawable.radius_button_checked)
-			app.config.fontSize = 22
-
-		} else if (app.config.fontSize > 22 && app.config.fontSize < 26) {
-			normalSize.setBackgroundResource(R.drawable.radius_button_checked)
-			app.config.fontSize = 24
-
-		} else {
-			bigSize.setBackgroundResource(R.drawable.radius_button_checked)
-			app.config.fontSize = 26
-
+		when (app.config.fontSize) {
+			 App.FontSize.SMALL -> {
+				smallSize.setBackgroundResource(R.drawable.radius_button_checked)
+			}
+			App.FontSize.NORMAL -> {
+				normalSize.setBackgroundResource(R.drawable.radius_button_checked)
+			}
+			else -> {
+				bigSize.setBackgroundResource(R.drawable.radius_button_checked)
+			}
 		}
-		val fontSize = app.config.fontSize.toFloat()
+		bufferView.textSize = app.config.fontSize.value
 		for (i in 0 until 3) {
-			(flipper.getChildAt(i) as BookView).textSize = fontSize
+			(flipper.getChildAt(i) as BookView).textSize = app.config.fontSize.value
 		}
-		bufferView.textSize = fontSize
 	}
 
 	private fun resizeFont() {
 		applySize()
-		showContent(true)
+		handler.postDelayed({
+			if (fileInfo.chapters.size > 0) {
+				val readPoint =
+					fileInfo.chapters[fileInfo.readChapter].pages[fileInfo.readPageOfChapter].start
+				val file = File(summary.path)
+				file.reader(Charset.forName(fileInfo.encoding)).use {
+					var lastEnd = 0L
+					for (i in 0 until fileInfo.chapters.size) {
+						val c = fileInfo.chapters[i]
+						it.skip(c.startPoint - lastEnd)
+						val buffer = CharArray((c.endPoint - c.startPoint).toInt())
+						val size = it.read(buffer)
+						val str = String(buffer, 0, size).trimEnd()
+						val chapter = App.Chapter()
+						chapter.name = c.name
+						chapter.startPoint = c.startPoint
+						chapter.endPoint = c.endPoint
+
+						parseChapter(chapter, str, str.length)
+						fileInfo.chapters[i] = chapter
+						lastEnd = c.endPoint
+					}
+				}
+				val readChapter = fileInfo.chapters[fileInfo.readChapter]
+				var i = readChapter.pages.size - 1
+				while (i >= 0) {
+					if (readPoint >= readChapter.pages[i].start) {
+						fileInfo.readPageOfChapter = i
+						break
+					}
+					i--
+				}
+				fileInfo.calcReadPage()
+			}
+			app.saveFileIndex(fileInfo, fileInfo.key)
+			app.saveFileState(fileInfo, fileInfo.key)
+			showContent(true)
+		}, 50)
 	}
 
 }

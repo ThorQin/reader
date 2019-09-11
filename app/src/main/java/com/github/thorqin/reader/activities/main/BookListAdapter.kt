@@ -1,5 +1,6 @@
 package com.github.thorqin.reader.activities.main
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
@@ -15,7 +16,7 @@ import java.io.File
 
 
 class BookListAdapter(
-	val context: Context,
+	private val context: Context,
 	private val onDeleteItem: (key: String) -> Unit
 ) : BaseAdapter() {
 
@@ -67,9 +68,10 @@ class BookListAdapter(
 		}
 	}
 
+	@SuppressLint("InflateParams")
 	override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
 		val item = data!![position]
-		var view: SwipeRevealLayout = if (convertView != null) {
+		val view: SwipeRevealLayout = if (convertView != null) {
 			convertView as SwipeRevealLayout
 		} else {
 			inflater.inflate(R.layout.book_item, null) as SwipeRevealLayout

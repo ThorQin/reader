@@ -75,7 +75,7 @@
 				android:textColor="@color/colorBlack"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				/>
+				tools:ignore="SpUsage" />
 		</FrameLayout>
 
 		<!-- Brightness Switch Button -->
@@ -223,7 +223,7 @@
 				android:text="@string/sunshine_mode"
 				android:textColor="@color/colorWhite"
 				android:textSize="20dp"
-				tools:ignore="SpUsage" />
+				tools:ignore="ButtonStyle,RtlHardcoded,SpUsage" />
 
 			<Button
 				android:id="@+id/eyeCareMode"
@@ -240,7 +240,7 @@
 				android:text="@string/eye_care_mode"
 				android:textColor="@color/colorWhite"
 				android:textSize="20dp"
-				tools:ignore="SpUsage" />
+				tools:ignore="ButtonStyle,RtlHardcoded,SpUsage" />
 
 		</LinearLayout>
 
@@ -272,7 +272,7 @@
 				android:text="@string/small"
 				android:textColor="@color/colorWhite"
 				android:textSize="20dp"
-				tools:ignore="SpUsage" />
+				tools:ignore="ButtonStyle,SpUsage" />
 
 			<Button
 				android:id="@+id/normalSize"
@@ -288,7 +288,7 @@
 				android:text="@string/normal"
 				android:textColor="@color/colorWhite"
 				android:textSize="20dp"
-				tools:ignore="SpUsage" />
+				tools:ignore="ButtonStyle,SpUsage" />
 
 			<Button
 				android:id="@+id/bigSize"
@@ -304,7 +304,7 @@
 				android:text="@string/big"
 				android:textColor="@color/colorWhite"
 				android:textSize="20dp"
-				tools:ignore="SpUsage" />
+				tools:ignore="ButtonStyle,SpUsage" />
 
 		</LinearLayout>
 
@@ -329,7 +329,8 @@
 			android:text="@string/index"
 			android:textAlignment="gravity"
 			android:textColor="@color/colorWhite"
-			android:textSize="24dp" />
+			android:textSize="24dp"
+			tools:ignore="SpUsage" />
 
 		<View android:layout_height="1dp"
 			android:background="@color/colorAccent"

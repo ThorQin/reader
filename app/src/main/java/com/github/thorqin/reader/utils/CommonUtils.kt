@@ -19,11 +19,11 @@ class Exclusion: ExclusionStrategy {
 		if (f == null) {
 			return true
 		}
-		return f!!.getAnnotation(Skip::class.java) != null
+		return f.getAnnotation(Skip::class.java) != null
 	}
 }
 
-fun Json(): Gson {
+fun json(): Gson {
 	return GsonBuilder()
 		.addSerializationExclusionStrategy(Exclusion())
 		.addDeserializationExclusionStrategy(Exclusion())
@@ -42,6 +42,11 @@ private class ArrayTypeImpl(internal var clazz: Class<*>) : ParameterizedType {
 	}
 }
 
+fun <T> makeListType(type: Class<T>): Type {
+	return ArrayTypeImpl(type)
+}
+
+/*
 private class MapTypeImpl(internal var keyClazz: Class<*>, internal var valueClazz: Class<*>) :
 	ParameterizedType {
 	override fun getActualTypeArguments(): Array<Type> {
@@ -55,10 +60,7 @@ private class MapTypeImpl(internal var keyClazz: Class<*>, internal var valueCla
 	}
 }
 
-fun <T> makeListType(type: Class<T>): Type {
-	return ArrayTypeImpl(type)
-}
-
 fun <K, V> makeMapType(keyType: Class<K>, valueType: Class<V>): Type {
 	return MapTypeImpl(keyType, valueType)
 }
+*/

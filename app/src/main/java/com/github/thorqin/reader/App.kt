@@ -1,11 +1,12 @@
 package com.github.thorqin.reader
 
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Application
 import android.content.Context
 import android.widget.Toast
-import com.github.thorqin.reader.utils.Json
+import com.github.thorqin.reader.utils.json
 import com.github.thorqin.reader.utils.Skip
 import com.github.thorqin.reader.utils.makeListType
 import org.apache.commons.io.FileUtils
@@ -45,7 +46,7 @@ class App : Application() {
 		var name = ""
 		var path = ""
 		var encoding = "utf-8"
-		var fontSize = 24
+		var fontSize = FontSize.NORMAL
 		var totalPages = 0
 		var readPage = 0
 		var readChapter = 0
@@ -60,7 +61,7 @@ class App : Application() {
 
 		var chapterJson: String
 			get() {
-				var chapterStore = arrayListOf<ChapterStore>()
+				val chapterStore = arrayListOf<ChapterStore>()
 				for (i in 0 until chapters.size) {
 					val c = chapters[i]
 					val cs = ChapterStore()
@@ -72,12 +73,12 @@ class App : Application() {
 					}
 					chapterStore.add(cs)
 				}
-				return Json().toJson(chapterStore)
+				return json().toJson(chapterStore)
 			}
 			set(json) {
 				chapters.clear()
-				var store =
-					Json().fromJson(json, makeListType(ChapterStore::class.java)) as List<ChapterStore>
+				val store =
+					json().fromJson(json, makeListType(ChapterStore::class.java)) as List<ChapterStore>
 				for (i in 0 until store.size) {
 					val cs = store[i]
 					val c = Chapter()
@@ -96,7 +97,7 @@ class App : Application() {
 				}
 			}
 
-		fun updateReadPage(value: Int) {
+		fun setNewReadPage(value: Int) {
 			if (value in 0 until totalPages) {
 				readPage = value
 				var sum = 0
@@ -110,6 +111,15 @@ class App : Application() {
 					}
 				}
 			}
+		}
+
+		fun calcReadPage() {
+			var sum = 0
+			for (i in 0 until readChapter) {
+				sum += chapters[i].pages.size
+			}
+			sum += readPageOfChapter
+			readPage = sum
 		}
 
 		fun prevTopic() {
@@ -137,7 +147,7 @@ class App : Application() {
 		}
 
 		fun getContent(chapter: Int, page: Int): String {
-			var file = File(path)
+			val file = File(path)
 			if (chapters.size == 0 || chapter < 0 || chapter >= chapters.size) {
 				return ""
 			}
@@ -149,10 +159,10 @@ class App : Application() {
 			@Suppress("NAME_SHADOWING")
 			val page = chapter.pages[page]
 			file.inputStream().use {
-				it.reader(Charset.forName(encoding)).use {
-					it.skip(page.start)
-					var buffer = CharArray(page.length)
-					it.read(buffer)
+				it.reader(Charset.forName(encoding)).use { it1 ->
+					it1.skip(page.start)
+					val buffer = CharArray(page.length)
+					it1.read(buffer)
 					return String(buffer)
 				}
 			}
@@ -190,7 +200,7 @@ class App : Application() {
 		var lastReadTime: Long? = null
 		val desc: String
 			get() {
-				var p = if (totalLength > 0L) {
+				val p = if (totalLength > 0L) {
 					floor(progress * 10000f) / 100
 				} else {
 					0f
@@ -199,9 +209,15 @@ class App : Application() {
 			}
 	}
 
+	enum class FontSize(val value: Int) {
+		SMALL(20),
+		NORMAL(24),
+		BIG(28)
+	}
+
 	class AppConfig {
 		var files = HashMap<String, FileSummary>()
-		var fontSize = 24
+		var fontSize = FontSize.NORMAL
 		var lastRead: String? = null
 		var topicRule = TOPIC_RULE
 		var sunshineMode = false
@@ -209,11 +225,12 @@ class App : Application() {
 	}
 
 	companion object {
-		val TOPIC_RULE =
+		const val TOPIC_RULE =
 			"^\\s*(?:第\\s*[0-9零一二三四五六七八九十百千万]+\\s*[章节篇部][、，\\s]|(?:[0-9]+|[零一二三四五六七八九十百千万]+)[、，\\s]\\S+)"
 		private val HEX_DIGITS =
 			charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
 
+		@JvmStatic
 		fun hexString(bytes: ByteArray): String {
 			val str = CharArray(bytes.size * 2)
 			var k = 0
@@ -224,24 +241,27 @@ class App : Application() {
 			return String(str)
 		}
 
+		@JvmStatic
 		fun digest(str: String): String {
-			var digest = MessageDigest.getInstance("SHA-256")
+			val digest = MessageDigest.getInstance("SHA-256")
 			digest.update(str.toByteArray(Charset.forName("utf-8")))
 			return hexString(digest.digest())
 		}
 
-
+		@JvmStatic
 		fun dip2px(context: Context, dipValue: Float): Int {
 			val scale = context.resources.displayMetrics.density
 			return (dipValue * scale + 0.5f).toInt()
 		}
 
+		/*
+		@JvmStatic
 		fun px2dip(context: Context, pxValue: Float): Int {
 			val scale = context.resources.displayMetrics.density
 			return (pxValue / scale + 0.5f).toInt()
 		}
 
-
+		@JvmStatic
 		fun msgbox(context: Context, msg: String, title: String?) {
 			val dialog = AlertDialog.Builder(context)
 			if (title != null) {
@@ -250,6 +270,7 @@ class App : Application() {
 			dialog.setMessage(msg)
 			dialog.show()
 		}
+		*/
 
 		fun askbox(context: Context, msg: String, title: String?, onOk: () -> Unit) {
 			val dlg = AlertDialog.Builder(context)
@@ -264,6 +285,7 @@ class App : Application() {
 			dlg.show()
 		}
 
+		@SuppressLint("DefaultLocale")
 		@Throws(IOException::class)
 		fun detectCharset(inputStream: InputStream, defaultCharset: String? = "gb18030"): String {
 			val pIn = PushbackInputStream(inputStream, 3)
@@ -274,17 +296,17 @@ class App : Application() {
 				charset = "utf-8"
 			} else if (bom[0] == 0xFE.toByte() && bom[1] == 0xFF.toByte()) {
 				charset = "utf-16be"
-				pIn.unread(bom[2] as Int)
+				pIn.unread(bom[2].toInt())
 			} else if (bom[0] == 0xFF.toByte() && bom[1] == 0xFE.toByte()) {
 				charset = "utf-16le"
-				pIn.unread(bom[2] as Int)
+				pIn.unread(bom[2].toInt())
 			} else {
 				// Do not have BOM, so, determine whether it is en UTF-8 charset.
 				pIn.unread(bom)
 				var utf8 = true
 				var ansi = true
 				val buffer = ByteArray(4096)
-				var size: Int
+				val size: Int
 				var checkBytes = 0
 				size = pIn.read(buffer)
 				for (i in 0 until size) {
@@ -338,7 +360,7 @@ class App : Application() {
 			val configContent = FileUtils.readFileToString(
 				filesDir.resolve("config.json"), "utf-8"
 			)
-			Json().fromJson(configContent, AppConfig::class.java)
+			json().fromJson(configContent, AppConfig::class.java)
 		} catch (e: Exception) {
 			AppConfig()
 		}
@@ -346,7 +368,7 @@ class App : Application() {
 
 	fun saveConfig() {
 		try {
-			val content = Json().toJson(config)
+			val content = json().toJson(config)
 			FileUtils.writeStringToFile(filesDir.resolve("config.json"), content, "utf-8")
 		} catch (e: Exception) {
 			System.err.println("Save config failed: ${e.message}")
@@ -358,7 +380,7 @@ class App : Application() {
 		val detail: FileDetail
 		if (stateFile.isFile)
 			detail =
-				Json().fromJson(FileUtils.readFileToString(stateFile, "utf-8"), App.FileDetail::class.java)
+				json().fromJson(FileUtils.readFileToString(stateFile, "utf-8"), App.FileDetail::class.java)
 		else
 			throw Exception("Book info not exist: $key")
 		val indexPath = filesDir.resolve("books").resolve("$key-chapters.json")
@@ -379,7 +401,7 @@ class App : Application() {
 				path.mkdir()
 			}
 //			val stateFile = path.resolve("$key.json")
-//			val content = Json().toJson(fileInfo)
+//			val content = json().toJson(fileInfo)
 //			FileUtils.writeStringToFile(stateFile, content, "utf-8")
 
 			val chaptersFile = path.resolve("$key-chapters.json")
@@ -399,7 +421,7 @@ class App : Application() {
 				path.mkdir()
 			}
 			val stateFile = path.resolve("$key.json")
-			val content = Json().toJson(fileInfo as FileState)
+			val content = json().toJson(fileInfo as FileState)
 			FileUtils.writeStringToFile(stateFile, content, "utf-8")
 		} catch (e: Exception) {
 			System.err.println("Save book detail failed: ${e.message}")
