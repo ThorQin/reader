@@ -219,14 +219,20 @@ class App : Application() {
 		var files = HashMap<String, FileSummary>()
 		var fontSize = FontSize.NORMAL
 		var lastRead: String? = null
-		var topicRule = TOPIC_RULE
+		var topicRule: String? = null
 		var sunshineMode = false
 		var eyeCareMode = false
 	}
 
 	companion object {
-		const val TOPIC_RULE =
-			"^\\s*(?:第\\s*[0-9零一二三四五六七八九十百千万]+\\s*[章节篇部][、，\\s]|(?:[0-9]+|[零一二三四五六七八九十百千万]+)[、，\\s]\\S+)"
+		private const val PREFIX = "^\\s*"
+		private const val RULE1 = "(\\S*\\s+)?第\\s*[0-9零一二三四五六七八九十百千万]+\\s*[卷章节篇部]"
+		private const val RULE2 = "[0-9]+"
+		private const val RULE3 = "[零一二三四五六七八九十百千万]+"
+		private const val RULE4 = "卷\\s*[0-9零一二三四五六七八九十百千万]+"
+		private const val SUFFIX = "(?:[、，\\s]+\\S+|\\s*$)"
+		const val TOPIC_RULE = "$PREFIX(?:$RULE1|$RULE2|$RULE3|$RULE4)$SUFFIX"
+
 		private val HEX_DIGITS =
 			charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
 

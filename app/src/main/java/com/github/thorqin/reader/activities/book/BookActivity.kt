@@ -11,6 +11,7 @@ import kotlinx.android.synthetic.main.activity_book.*
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
@@ -19,6 +20,7 @@ import android.widget.SeekBar
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.github.thorqin.reader.App
+import com.github.thorqin.reader.activities.setting.SettingsActivity
 import java.io.File
 import java.lang.Exception
 import java.nio.charset.Charset
@@ -27,8 +29,11 @@ import java.util.regex.Pattern
 import kotlin.math.abs
 import kotlin.math.floor
 
-
 class BookActivity : AppCompatActivity() {
+
+	companion object {
+		private const val TITLE_LINE_SIZE = 25
+	}
 
 	enum class Direction(var value: Int) {
 		LEFT(0),
@@ -146,6 +151,13 @@ class BookActivity : AppCompatActivity() {
 			app.config.eyeCareMode = eyeCareMode.tag != R.drawable.radius_button_checked
 			applySceneMode()
 			app.saveConfig()
+		}
+
+		setting.setOnClickListener {
+			toggleActionBar {
+				val intent = Intent(this, SettingsActivity::class.java)
+				this.startActivityForResult(intent, 2)
+			}
 		}
 
 		applySceneMode()
@@ -348,6 +360,17 @@ class BookActivity : AppCompatActivity() {
 		openBook()
 	}
 
+	@SuppressLint("RtlHardcoded")
+	override fun onBackPressed() {
+		when {
+			drawerBox.isDrawerOpen(Gravity.LEFT) -> drawerBox.closeDrawer(Gravity.LEFT)
+			showActionBar -> toggleActionBar()
+			showSceneBar -> toggleSceneBar()
+			showFontSizeBar -> toggleFontSizeBar()
+			else -> super.onBackPressed()
+		}
+	}
+
 
 	private fun applySceneMode() {
 		val sunshine =
@@ -375,15 +398,15 @@ class BookActivity : AppCompatActivity() {
 
 		val color = if (app.config.sunshineMode) {
 			if (app.config.eyeCareMode) {
-				"#ffff80"
+				"#fff0a0"
 			} else {
 				"#ffffff"
 			}
 		} else {
 			if (app.config.eyeCareMode) {
-				"#aaaa40"
+				"#887740"
 			} else {
-				"#aaaaaa"
+				"#888888"
 			}
 		}
 
@@ -719,7 +742,7 @@ class BookActivity : AppCompatActivity() {
 			fun testEnd(c: Char?) {
 				if (!beginChapter) {
 					when {
-						lineSize in 1..50 -> // match line content
+						lineSize in 1..TITLE_LINE_SIZE -> // match line content
 							when {
 								pattern.matcher(line).find() -> {
 									chapter.endPoint = lineStart
@@ -781,7 +804,7 @@ class BookActivity : AppCompatActivity() {
 							lineStart = scan
 						}
 						lineSize++
-						if (lineSize < 50) {
+						if (lineSize < TITLE_LINE_SIZE) {
 							line.append(c)
 						}
 					}
@@ -868,7 +891,7 @@ class BookActivity : AppCompatActivity() {
 		bigSize.setBackgroundResource(R.drawable.radius_button_normal)
 
 		when (app.config.fontSize) {
-			 App.FontSize.SMALL -> {
+			App.FontSize.SMALL -> {
 				smallSize.setBackgroundResource(R.drawable.radius_button_checked)
 			}
 			App.FontSize.NORMAL -> {
@@ -885,7 +908,7 @@ class BookActivity : AppCompatActivity() {
 	}
 
 	private fun resizeFont() {
-		applySize()
+		bufferView.textSize = app.config.fontSize.value
 		handler.postDelayed({
 			if (fileInfo.chapters.size > 0) {
 				val readPoint =
@@ -918,10 +941,19 @@ class BookActivity : AppCompatActivity() {
 					}
 					i--
 				}
+				var total = 0
+				@Suppress("NAME_SHADOWING")
+				for (i in 0 until fileInfo.chapters.size) {
+					total += fileInfo.chapters[i].pages.size
+				}
+				fileInfo.totalPages = total
 				fileInfo.calcReadPage()
+				seekBar.max = fileInfo.totalPages - 1
 			}
+			fileInfo.fontSize = app.config.fontSize
 			app.saveFileIndex(fileInfo, fileInfo.key)
 			app.saveFileState(fileInfo, fileInfo.key)
+			applySize()
 			showContent(true)
 		}, 50)
 	}

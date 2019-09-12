@@ -24,7 +24,8 @@
 	<string name="sunshine_mode">阳光模式</string>
 	<string name="eye_care_mode">护眼模式</string>
 	<string name="big">较大</string>
-	<string name="normal">正常</string>
+	<string name="normal">适中</string>
 	<string name="small">较小</string>
 	<string name="more">更多</string>
+	<string name="settings">设置</string>
 </resources>

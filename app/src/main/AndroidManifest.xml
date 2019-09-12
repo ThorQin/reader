@@ -14,29 +14,26 @@
 		android:supportsRtl="true"
 		android:theme="@style/AppTheme"
 		tools:ignore="GoogleAppIndexingWarning">
-		<activity android:name=".activities.start.LaunchScreenActivity"
+		<activity
+			android:name=".activities.setting.SettingsActivity"
+			android:label="@string/setting"></activity>
+		<activity
+			android:name=".activities.start.LaunchScreenActivity"
 			android:theme="@style/TranslucentTheme">
-
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 		</activity>
-
-
 		<activity
-			android:launchMode="singleTop"
 			android:name=".activities.book.BookActivity"
 			android:label=""
+			android:launchMode="singleTop"
 			android:theme="@style/BookActivityTheme" />
-
-
 		<activity
 			android:name=".activities.main.MainActivity"
-			android:theme="@style/MainActivityTheme">
-
-		</activity>
+			android:theme="@style/MainActivityTheme"></activity>
 	</application>
 
 </manifest>

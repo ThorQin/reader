@@ -16,6 +16,7 @@
 		<item name="android:windowAllowReturnTransitionOverlap">true</item>
 		<item name="android:windowEnterTransition">@android:transition/slide_right</item>
 		<item name="android:windowExitTransition">@android:transition/slide_left</item>
+		<item name="android:editTextPreferenceStyle">@style/SettingStyle</item>
 	</style>
 
 	<style name="MainActivityTheme" parent="AppTheme">
@@ -62,6 +63,11 @@
 		<item name="android:paddingTop">10dp</item>
 		<item name="android:paddingBottom">10dp</item>
 
+	</style>
+
+	<style name="SettingStyle" parent="@style/AppTheme">
+		<item name="android:textColor">@color/colorWhite</item>
+		<item name="editTextColor">@color/colorWhite</item>
 	</style>
 
 </resources>

@@ -22,7 +22,7 @@ class BookView : View {
 	private var chapterName = ""
 	private var pageNo = ""
 	private var progressInfo = ""
-	private var pageIndex = 0
+	private var pageIndex: Int? = null
 
 	private lateinit var paint: Paint
 	private lateinit var descPaint: Paint
