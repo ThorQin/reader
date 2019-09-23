@@ -282,9 +282,9 @@ class MainActivity : AppCompatActivity() {
 
 	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 		super.onActivityResult(requestCode, resultCode, data)
-		if (requestCode == 1) {
+		if (requestCode == 1) { // SETTING MAYBE CHANGED
 			searchBooks()
-		} else if (requestCode == 2) {
+		} else if (requestCode == 2) { // BOOK ACTIVITY CLOSED
 			showFiles()
 			app.config.lastRead = null
 			app.saveConfig()

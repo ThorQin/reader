@@ -53,6 +53,7 @@ class App : Application() {
 		var readPageOfChapter = 0
 		var screenWidth = 0
 		var screenHeight = 0
+		var topicRule: String? = null
 	}
 
 	class FileDetail : FileState() {
@@ -219,9 +220,10 @@ class App : Application() {
 		var files = HashMap<String, FileSummary>()
 		var fontSize = FontSize.NORMAL
 		var lastRead: String? = null
-		var topicRule: String? = null
 		var sunshineMode = false
 		var eyeCareMode = false
+		var clickToFlip = false
+		var neverLock = false
 	}
 
 	companion object {

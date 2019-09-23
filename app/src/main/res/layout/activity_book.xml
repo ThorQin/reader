@@ -25,6 +25,7 @@
 				android:id="@+id/toolbar"
 				android:layout_width="match_parent"
 				android:layout_height="?attr/actionBarSize"
+				app:menu="@menu/activity_book"
 				app:popupTheme="@style/AppTheme.PopupOverlay" />
 
 		</com.google.android.material.appbar.AppBarLayout>
@@ -188,7 +189,7 @@
 					android:layout_height="match_parent"
 					android:layout_weight="1"
 					android:drawableTop="@drawable/ic_more_horiz_white_24dp"
-					android:text="@string/more"
+					android:text="@string/settings"
 					style="?android:attr/buttonBarButtonStyle"
 					android:theme="@style/BookSettingButton" />
 

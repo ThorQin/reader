@@ -1,5 +1,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
 	android:orientation="vertical">
@@ -21,10 +22,11 @@
 	</com.google.android.material.appbar.AppBarLayout>
 
 	<View android:layout_width="match_parent"
-		android:layout_height="1dp"
+		android:layout_height="1px"
 		android:background="@color/colorWorkspace"/>
 
 	<LinearLayout
+		android:id="@+id/clickToFlipItem"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:background="@drawable/book_item_bg"
@@ -37,18 +39,21 @@
 			android:layout_height="wrap_content"
 			android:layout_weight="1"
 			android:textColor="@color/colorWhite"
-			android:text="启用点击翻页" />
+			android:text="@string/click_to_flip" />
 		<Switch
+			android:id="@+id/clickToFlipSwitch"
 			android:padding="25dp"
+			android:theme="@style/switchTheme"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content" />
 	</LinearLayout>
 
 	<View android:layout_width="match_parent"
-		android:layout_height="1dp"
+		android:layout_height="1px"
 		android:background="@color/colorWorkspace"/>
 
 	<LinearLayout
+		android:id="@+id/screenLockItem"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:background="@drawable/book_item_bg"
@@ -61,94 +66,26 @@
 			android:layout_height="wrap_content"
 			android:layout_weight="1"
 			android:textColor="@color/colorWhite"
-			android:text="启用键盘翻页" />
+			android:text="@string/lock_screen_delay" />
 		<Switch
+			android:id="@+id/screenLockSwitch"
 			android:padding="25dp"
+			android:theme="@style/switchTheme"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content" />
+<!--		<TextView-->
+<!--			android:id="@+id/screenDelayText"-->
+<!--			android:drawableRight="@drawable/ic_navigate_next_white_24dp"-->
+<!--			android:padding="25dp"-->
+<!--			android:layout_width="wrap_content"-->
+<!--			android:layout_height="match_parent"-->
+<!--			android:textColor="@color/colorWorkspaceHighlight"-->
+<!--			android:text="@string/system_default"-->
+<!--			tools:ignore="RtlHardcoded" />-->
 	</LinearLayout>
 
 	<View android:layout_width="match_parent"
-		android:layout_height="1dp"
+		android:layout_height="1px"
 		android:background="@color/colorWorkspace"/>
 
-	<LinearLayout
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:background="@drawable/book_item_bg"
-		android:clickable="true"
-		android:focusable="true"
-		android:orientation="horizontal">
-		<TextView
-			android:padding="25dp"
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="1"
-			android:textColor="@color/colorWhite"
-			android:text="启用鼠标翻页" />
-		<Switch
-			android:padding="25dp"
-			android:backgroundTint="@color/colorWorkspace"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
-	</LinearLayout>
-
-	<View android:layout_width="match_parent"
-		android:layout_height="1dp"
-		android:background="@color/colorWorkspace"/>
-
-	<LinearLayout
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:background="@drawable/book_item_bg"
-		android:clickable="true"
-		android:focusable="true"
-		android:orientation="horizontal">
-		<TextView
-			android:padding="25dp"
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="1"
-			android:textColor="@color/colorWhite"
-			android:text="熄屏时间" />
-		<TextView
-			android:drawableRight="@drawable/ic_navigate_next_white_24dp"
-			android:padding="25dp"
-			android:layout_width="wrap_content"
-			android:layout_height="match_parent"
-			android:textColor="@color/colorWorkspaceHighlight"
-			android:text="系统默认" />
-	</LinearLayout>
-
-	<View android:layout_width="match_parent"
-		android:layout_height="1dp"
-		android:background="@color/colorWorkspace"/>
-
-	<LinearLayout
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:background="@drawable/book_item_bg"
-		android:clickable="true"
-		android:focusable="true"
-		android:orientation="horizontal">
-		<TextView
-			android:padding="25dp"
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="1"
-			android:textColor="@color/colorWhite"
-			android:text="自定义章节分割规则" />
-		<TextView
-			android:drawableRight="@drawable/ic_navigate_next_white_24dp"
-			android:padding="25dp"
-			android:layout_width="wrap_content"
-			android:layout_height="match_parent"
-			android:textColor="@color/colorWorkspaceHighlight"
-			android:text="默认" />
-	</LinearLayout>
-
-
-	<View android:layout_width="match_parent"
-		android:layout_height="1dp"
-		android:background="@color/colorWorkspace"/>
 </LinearLayout>

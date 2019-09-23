@@ -28,4 +28,11 @@
 	<string name="small">较小</string>
 	<string name="more">更多</string>
 	<string name="settings">设置</string>
+	<string name="custom_topic_rule">自定义章节分割规则</string>
+	<string name="lock_screen_delay">防止熄屏</string>
+	<string name="system_default">系统默认</string>
+	<string name="use_default">默认</string>
+	<string name="click_to_flip">启用点击翻页</string>
+	<string name="delete_item">删除</string>
+	<string name="split_topic">重新分章</string>
 </resources>

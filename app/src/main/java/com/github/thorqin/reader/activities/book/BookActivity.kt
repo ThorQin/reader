@@ -2,21 +2,22 @@ package com.github.thorqin.reader.activities.book
 
 import android.animation.Animator
 import android.os.Bundle
-import android.view.MenuItem
-import android.view.MotionEvent
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.github.thorqin.reader.R
 import kotlinx.android.synthetic.main.activity_book.*
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
+import android.content.DialogInterface
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
-import android.view.Gravity
+import android.view.*
 import android.view.View.*
+import android.widget.EditText
 import android.widget.SeekBar
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.github.thorqin.reader.App
@@ -28,6 +29,7 @@ import java.util.*
 import java.util.regex.Pattern
 import kotlin.math.abs
 import kotlin.math.floor
+
 
 class BookActivity : AppCompatActivity() {
 
@@ -55,6 +57,12 @@ class BookActivity : AppCompatActivity() {
 		get() {
 			return application as App
 		}
+
+	override fun onCreateOptionsMenu(menu: Menu): Boolean {
+		val inflater = menuInflater
+		inflater.inflate(R.menu.activity_book, menu)
+		return true
+	}
 
 
 	@SuppressLint("RtlHardcoded")
@@ -156,7 +164,7 @@ class BookActivity : AppCompatActivity() {
 		setting.setOnClickListener {
 			toggleActionBar {
 				val intent = Intent(this, SettingsActivity::class.java)
-				this.startActivityForResult(intent, 2)
+				this.startActivityForResult(intent, 1)
 			}
 		}
 
@@ -271,7 +279,7 @@ class BookActivity : AppCompatActivity() {
 					val diff = boxWidth / 8
 					if (surface != null) {
 						when (moveDirection) {
-							Direction.RIGHT -> {
+							Direction.RIGHT -> { // flip to previous page
 								if (event.rawX > startX!! + diff) {
 									val toPos = 0f
 									moveViewTo(surface!!, toPos) {
@@ -293,12 +301,12 @@ class BookActivity : AppCompatActivity() {
 									}
 								}
 							}
-							else -> {
+							else -> { // flip to next page
 								if (event.rawX < startX!! - diff) {
 									moveViewTo(surface!!, -boxWidth) {
-										val bottomView = flipper.getChildAt(2)
+										val topView = flipper.getChildAt(2)
 										flipper.removeViewAt(2)
-										flipper.addView(bottomView, 0)
+										flipper.addView(topView, 0)
 										setPos()
 										surface?.elevation = 0f
 										surface = null
@@ -319,6 +327,35 @@ class BookActivity : AppCompatActivity() {
 							// IS CLICK
 							if (startX!! > boxWidth / 4 && startX!! < boxWidth / 4 * 3) {
 								toggleActionBar()
+							} else if (startX!! < boxWidth / 4) {
+								if (app.config.clickToFlip) {
+									// flip to previous page
+									val moveView = flipper.getChildAt(2)
+									moveView.elevation = 20f
+									moveViewTo(moveView, 0f) {
+										val bottomView = flipper.getChildAt(0)
+										flipper.removeViewAt(0)
+										flipper.addView(bottomView)
+										setPos()
+										moveView.elevation = 0f
+										fileInfo.previous()
+										showContent(false)
+									}
+								}
+							} else if (startX!! > boxWidth / 4 * 3) {
+								if (app.config.clickToFlip) {
+									val moveView = flipper.getChildAt(1)
+									moveView.elevation = 20f
+									moveViewTo(moveView, -boxWidth) {
+										val topView = flipper.getChildAt(2)
+										flipper.removeViewAt(2)
+										flipper.addView(topView, 0)
+										setPos()
+										moveView.elevation = 0f
+										fileInfo.next()
+										showContent(false)
+									}
+								}
 							}
 						}
 					}
@@ -358,6 +395,7 @@ class BookActivity : AppCompatActivity() {
 		}
 
 		openBook()
+		keepScreenOn()
 	}
 
 	@SuppressLint("RtlHardcoded")
@@ -532,6 +570,10 @@ class BookActivity : AppCompatActivity() {
 		return when (item.itemId) {
 			android.R.id.home -> {
 				finish()
+				true
+			}
+			R.id.split_topic -> {
+				inputTopicRule()
 				true
 			}
 			else -> super.onOptionsItemSelected(item)
@@ -854,10 +896,10 @@ class BookActivity : AppCompatActivity() {
 
 	}
 
-	private fun initBook(width: Int, height: Int) {
+	private fun initBook(width: Int, height: Int, topicRule: String = App.TOPIC_RULE) {
 		bufferView.textSize = app.config.fontSize.value
 		val pattern: Pattern = try {
-			Pattern.compile(app.config.topicRule, Pattern.CASE_INSENSITIVE)
+			Pattern.compile(topicRule, Pattern.CASE_INSENSITIVE)
 		} catch (e: Exception) {
 			Pattern.compile(App.TOPIC_RULE, Pattern.CASE_INSENSITIVE)
 		}
@@ -958,4 +1000,50 @@ class BookActivity : AppCompatActivity() {
 		}, 50)
 	}
 
+	private fun keepScreenOn() {
+		if (app.config.neverLock) {
+			window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+			window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+		} else {
+			window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+			window.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+		}
+	}
+
+	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+		super.onActivityResult(requestCode, resultCode, data)
+		if (requestCode == 1) { // SETTING ACTIVITY CLOSED
+			keepScreenOn()
+		}
+	}
+
+	private fun inputTopicRule() {
+		val et = EditText(this)
+		et.setText(if (fileInfo.topicRule == null) App.TOPIC_RULE else fileInfo.topicRule!!)
+		val dialog = AlertDialog.Builder(this).setTitle("定义分章规则")
+			.setView(et)
+			.setPositiveButton("确定", null)
+			.setNegativeButton("取消", null)
+			.create()
+		dialog.setOnShowListener {
+			it as AlertDialog
+			val button = it.getButton(AlertDialog.BUTTON_POSITIVE)
+			button.setOnClickListener {
+				val input = et.text.toString()
+				if (input.trim() == "") {
+					Toast.makeText(this, "无效的分章规则！", Toast.LENGTH_LONG).show()
+				} else {
+					try {
+						Pattern.compile(input)
+						fileInfo.topicRule = input
+						app.saveFileState(fileInfo, fileInfo.key)
+						dialog.dismiss()
+					} catch (e: Exception) {
+						Toast.makeText(this, "无效的分章规则！", Toast.LENGTH_LONG).show()
+					}
+				}
+			}
+		}
+		dialog.show()
+	}
 }
