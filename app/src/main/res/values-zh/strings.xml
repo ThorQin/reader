@@ -29,10 +29,19 @@
 	<string name="more">更多</string>
 	<string name="settings">设置</string>
 	<string name="custom_topic_rule">自定义章节分割规则</string>
-	<string name="lock_screen_delay">防止熄屏</string>
+	<string name="lock_screen_delay">阅读时防止熄屏</string>
 	<string name="system_default">系统默认</string>
 	<string name="use_default">默认</string>
-	<string name="click_to_flip">启用点击翻页</string>
+	<string name="click_to_flip">点击屏幕边缘翻页</string>
 	<string name="delete_item">删除</string>
 	<string name="split_topic">重新分章</string>
+	<string name="invalid_rule">无效的规则定义！</string>
+	<string name="ok">确定</string>
+	<string name="cancel">取消</string>
+	<string name="topic_rule">分章规则</string>
+	<string name="reset">重置</string>
+	<string name="upload_book">上传图书</string>
+	<string name="about">关于</string>
+	<string name="about_me">\n作者: 秦诺 \n邮箱: thor.qin@qq.com\n</string>
+	<string name="confirm_to_clear">清空书架会同时清除掉所有阅读进度，确认吗？</string>
 </resources>

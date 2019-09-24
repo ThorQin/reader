@@ -8,15 +8,16 @@ import kotlinx.android.synthetic.main.activity_book.*
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
-import android.content.DialogInterface
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.*
 import android.view.View.*
 import android.widget.EditText
 import android.widget.SeekBar
-import android.widget.Toast
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -162,10 +163,9 @@ class BookActivity : AppCompatActivity() {
 		}
 
 		setting.setOnClickListener {
-			toggleActionBar {
-				val intent = Intent(this, SettingsActivity::class.java)
-				this.startActivityForResult(intent, 1)
-			}
+			toggleActionBar()
+			val intent = Intent(this, SettingsActivity::class.java)
+			this.startActivityForResult(intent, 1)
 		}
 
 		applySceneMode()
@@ -193,7 +193,7 @@ class BookActivity : AppCompatActivity() {
 
 		bufferView.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
 			boxWidth = flipper.measuredWidth.toFloat()
-			println("boxWidth: $boxWidth")
+			// println("boxWidth: $boxWidth")
 			val newW = right - left
 			val newH = bottom - top
 			if (::fileInfo.isInitialized) {
@@ -290,7 +290,9 @@ class BookActivity : AppCompatActivity() {
 										surface?.elevation = 0f
 										surface = null
 										fileInfo.previous()
-										showContent(false)
+										handler.postDelayed({
+											showContent(false)
+										}, 50)
 									}
 								} else {
 									val toPos = -boxWidth
@@ -311,7 +313,9 @@ class BookActivity : AppCompatActivity() {
 										surface?.elevation = 0f
 										surface = null
 										fileInfo.next()
-										showContent(false)
+										handler.postDelayed({
+											showContent(false)
+										}, 50)
 									}
 								} else {
 									moveViewTo(surface!!, 0f) {
@@ -339,7 +343,9 @@ class BookActivity : AppCompatActivity() {
 										setPos()
 										moveView.elevation = 0f
 										fileInfo.previous()
-										showContent(false)
+										handler.postDelayed({
+											showContent(false)
+										}, 50)
 									}
 								}
 							} else if (startX!! > boxWidth / 4 * 3) {
@@ -353,7 +359,9 @@ class BookActivity : AppCompatActivity() {
 										setPos()
 										moveView.elevation = 0f
 										fileInfo.next()
-										showContent(false)
+										handler.postDelayed({
+											showContent(false)
+										}, 50)
 									}
 								}
 							}
@@ -721,7 +729,7 @@ class BookActivity : AppCompatActivity() {
 		handler.postDelayed({
 			app.saveFileState(fileInfo, fileInfo.key)
 			app.saveConfig()
-		}, 50)
+		}, 16)
 	}
 
 	@SuppressLint("RtlHardcoded")
@@ -896,10 +904,11 @@ class BookActivity : AppCompatActivity() {
 
 	}
 
-	private fun initBook(width: Int, height: Int, topicRule: String = App.TOPIC_RULE) {
+	private fun initBook(width: Int, height: Int) {
+		val topicRule = if (!::fileInfo.isInitialized || fileInfo.topicRule == null) App.TOPIC_RULE else fileInfo.topicRule!!
 		bufferView.textSize = app.config.fontSize.value
 		val pattern: Pattern = try {
-			Pattern.compile(topicRule, Pattern.CASE_INSENSITIVE)
+			Pattern.compile(topicRule.replace(Regex.fromLiteral("\\s+"), ""), Pattern.CASE_INSENSITIVE)
 		} catch (e: Exception) {
 			Pattern.compile(App.TOPIC_RULE, Pattern.CASE_INSENSITIVE)
 		}
@@ -907,6 +916,7 @@ class BookActivity : AppCompatActivity() {
 			applySize()
 			val file = File(summary.path)
 			fileInfo = parseFile(file, pattern)
+			fileInfo.topicRule = topicRule
 			app.config.lastRead = summary.key
 			fileInfo.key = summary.key
 			fileInfo.name = summary.name
@@ -1003,9 +1013,11 @@ class BookActivity : AppCompatActivity() {
 	private fun keepScreenOn() {
 		if (app.config.neverLock) {
 			window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+			@Suppress("DEPRECATION")
 			window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
 		} else {
 			window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+			@Suppress("DEPRECATION")
 			window.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
 		}
 	}
@@ -1018,12 +1030,32 @@ class BookActivity : AppCompatActivity() {
 	}
 
 	private fun inputTopicRule() {
-		val et = EditText(this)
+		val layout = inflate(this, R.layout.input_dialog, null)
+		val et = layout.findViewById<EditText>(R.id.editText)
+		val msg = layout.findViewById<TextView>(R.id.errText)
+
+		et.addTextChangedListener(object: TextWatcher {
+			override fun afterTextChanged(s: Editable?) {
+				msg.visibility = GONE
+			}
+
+			override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+
+			}
+
+			override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+
+			}
+
+		})
+
 		et.setText(if (fileInfo.topicRule == null) App.TOPIC_RULE else fileInfo.topicRule!!)
-		val dialog = AlertDialog.Builder(this).setTitle("定义分章规则")
-			.setView(et)
-			.setPositiveButton("确定", null)
-			.setNegativeButton("取消", null)
+		val dialog = AlertDialog.Builder(this, R.style.dialogStyle).setTitle(getString(R.string.topic_rule))
+			.setView(layout)
+			.setPositiveButton(getString(R.string.ok), null)
+			.setNegativeButton(getString(R.string.cancel), null)
+			.setNeutralButton(getString(R.string.reset), null)
+			.setCancelable(false)
 			.create()
 		dialog.setOnShowListener {
 			it as AlertDialog
@@ -1031,17 +1063,23 @@ class BookActivity : AppCompatActivity() {
 			button.setOnClickListener {
 				val input = et.text.toString()
 				if (input.trim() == "") {
-					Toast.makeText(this, "无效的分章规则！", Toast.LENGTH_LONG).show()
+					msg.visibility = VISIBLE
 				} else {
 					try {
 						Pattern.compile(input)
 						fileInfo.topicRule = input
-						app.saveFileState(fileInfo, fileInfo.key)
 						dialog.dismiss()
+						handler.postDelayed({
+							initBook(bufferView.width, bufferView.height)
+						}, 50)
 					} catch (e: Exception) {
-						Toast.makeText(this, "无效的分章规则！", Toast.LENGTH_LONG).show()
+						msg.visibility = VISIBLE
 					}
 				}
+			}
+			val resetButton = it.getButton(AlertDialog.BUTTON_NEUTRAL)
+			resetButton.setOnClickListener {
+				et.setText(App.TOPIC_RULE)
 			}
 		}
 		dialog.show()

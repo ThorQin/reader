@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	tools:context=".activities.wifi.UploadActivity">
+
+	<com.google.android.material.appbar.AppBarLayout
+		android:id="@+id/appBar"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:alpha="1"
+		android:theme="@style/AppTheme.AppBarOverlay">
+
+		<androidx.appcompat.widget.Toolbar
+			android:id="@+id/toolbar"
+			android:layout_width="match_parent"
+			android:layout_height="?attr/actionBarSize"
+			app:popupTheme="@style/AppTheme.PopupOverlay" />
+
+	</com.google.android.material.appbar.AppBarLayout>
+
+	<View android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="2"/>
+
+	<ImageView
+		android:layout_gravity="center"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:src="@drawable/ic_wifi_gray_64dp" />
+	<TextView
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="@color/colorWhite"
+		android:textSize="20dp"
+		android:textAlignment="center"
+		android:text="请用电脑浏览器访问：\nhttp://10.68.200.32:12345"/>
+
+	<View android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="3"/>
+</LinearLayout>

@@ -4,6 +4,7 @@
 	package="com.github.thorqin.reader">
 
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
 	<application
 		android:name=".App"
@@ -14,9 +15,7 @@
 		android:supportsRtl="true"
 		android:theme="@style/AppTheme"
 		tools:ignore="GoogleAppIndexingWarning">
-		<activity
-			android:name=".activities.setting.SettingsActivity"
-			android:label="@string/setting"></activity>
+		<activity android:name=".activities.wifi.UploadActivity" />
 		<activity
 			android:name=".activities.start.LaunchScreenActivity"
 			android:theme="@style/TranslucentTheme">
@@ -27,13 +26,19 @@
 			</intent-filter>
 		</activity>
 		<activity
+			android:name=".activities.main.MainActivity"
+			android:screenOrientation="portrait"
+			android:theme="@style/MainActivityTheme" />
+		<activity
 			android:name=".activities.book.BookActivity"
 			android:label=""
 			android:launchMode="singleTop"
+			android:screenOrientation="portrait"
 			android:theme="@style/BookActivityTheme" />
 		<activity
-			android:name=".activities.main.MainActivity"
-			android:theme="@style/MainActivityTheme"></activity>
+			android:name=".activities.setting.SettingsActivity"
+			android:label="@string/setting"
+			android:screenOrientation="portrait" />
 	</application>
 
 </manifest>

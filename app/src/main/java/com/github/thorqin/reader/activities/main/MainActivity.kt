@@ -13,9 +13,11 @@ import android.view.MenuItem
 import android.view.View.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import androidx.core.view.MenuCompat
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.R
 import com.github.thorqin.reader.activities.book.BookActivity
+import com.github.thorqin.reader.activities.wifi.UploadActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.lang.Exception
@@ -85,6 +87,7 @@ class MainActivity : AppCompatActivity() {
 	override fun onCreateOptionsMenu(menu: Menu): Boolean {
 		val inflater = menuInflater
 		inflater.inflate(R.menu.activity_main, menu)
+		MenuCompat.setGroupDividerEnabled(menu, true)
 		return true
 	}
 
@@ -95,8 +98,15 @@ class MainActivity : AppCompatActivity() {
 				true
 			}
 			R.id.empty_book -> {
-				app.clearBook()
-				showFiles()
+				clearBooks()
+				true
+			}
+			R.id.wifi_upload -> {
+				showUpload()
+				true
+			}
+			R.id.about -> {
+				showAbout()
 				true
 			}
 			else -> super.onOptionsItemSelected(item)
@@ -265,7 +275,7 @@ class MainActivity : AppCompatActivity() {
 	}
 
 	private fun showOpenAppSetting() {
-		AlertDialog.Builder(this).setTitle(getString(R.string.no_storage_permission))
+		AlertDialog.Builder(this, R.style.dialogStyle).setTitle(getString(R.string.no_storage_permission))
 			.setMessage(getString(R.string.should_allow_permission))
 			.setPositiveButton(getString(R.string.open_now)) { _, _ ->
 				openSetting()
@@ -291,4 +301,23 @@ class MainActivity : AppCompatActivity() {
 		}
 	}
 
+	private fun showAbout() {
+		AlertDialog.Builder(this, R.style.dialogStyle).setTitle(getString(R.string.app_name))
+			.setMessage(getString(R.string.about_me))
+			.setCancelable(true).show()
+	}
+
+	private fun showUpload() {
+		val intent = Intent(this, UploadActivity::class.java)
+		startActivity(intent)
+	}
+
+	private fun clearBooks() {
+		AlertDialog.Builder(this, R.style.dialogStyle).setTitle(getString(R.string.app_name))
+			.setMessage(getString(R.string.confirm_to_clear))
+			.setPositiveButton(getString(R.string.ok)) { _, _ ->
+				app.clearBook()
+				showFiles()
+		}.setCancelable(true).show()
+	}
 }

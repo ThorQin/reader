@@ -35,4 +35,13 @@
 	<string name="click_to_flip">Click To Flip</string>
 	<string name="delete_item">Delete</string>
 	<string name="split_topic">Re-Split Topic</string>
+	<string name="invalid_rule">Invalid rule definition！</string>
+	<string name="ok">OK</string>
+	<string name="cancel">CANCEL</string>
+	<string name="topic_rule">TOPIC RULE</string>
+	<string name="reset">RESET</string>
+	<string name="upload_book">Upload Book</string>
+	<string name="about">About</string>
+	<string name="about_me">\nAuthor: Thor Qin \nEmail: thor.qin@qq.com\n</string>
+	<string name="confirm_to_clear">Empty bookshelf will cause clear all reading progress info, are you sure?</string>
 </resources>
