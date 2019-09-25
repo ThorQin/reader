@@ -6,6 +6,8 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
+import java.net.NetworkInterface.getNetworkInterfaces
+import java.net.SocketException
 
 
 @Target(AnnotationTarget.FIELD)
@@ -64,3 +66,22 @@ fun <K, V> makeMapType(keyType: Class<K>, valueType: Class<V>): Type {
 	return MapTypeImpl(keyType, valueType)
 }
 */
+
+fun getLocalIpAddress(): String? {
+	try {
+		val infos = getNetworkInterfaces()
+		while (infos.hasMoreElements()) {
+			val niFace = infos.nextElement()
+			val enumIpAddr = niFace.inetAddresses
+			while (enumIpAddr.hasMoreElements()) {
+				val mInetAddress = enumIpAddr.nextElement()
+				if (!mInetAddress.isLoopbackAddress) {
+					return mInetAddress.hostAddress.toString()
+				}
+			}
+		}
+	} catch (e: SocketException) {
+
+	}
+	return null
+}

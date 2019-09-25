@@ -5,16 +5,21 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.MenuItem
 import com.github.thorqin.reader.R
-import kotlinx.android.synthetic.main.settings_activity.*
 import android.net.wifi.WifiManager
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.content.IntentFilter
-
+import kotlinx.android.synthetic.main.activity_upload.*
+import kotlinx.android.synthetic.main.settings_activity.toolbar
+import java.net.InetAddress
+import java.nio.ByteOrder
+import java.math.BigInteger
 
 
 class UploadActivity : AppCompatActivity() {
+
+	private var running = false
 
 	private val wifiStateReceiver = object: BroadcastReceiver() {
 		override fun onReceive(context: Context?, intent: Intent?) {
@@ -36,6 +41,7 @@ class UploadActivity : AppCompatActivity() {
 		supportActionBar?.title = getString(R.string.upload_book)
 		supportActionBar?.setDisplayHomeAsUpEnabled(true)
 		init()
+
 	}
 
 	override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -62,15 +68,24 @@ class UploadActivity : AppCompatActivity() {
 	}
 
 	private fun startWebServer() {
+		if (running) {
+			return
+		}
+		running = true
 		println("Web Server Started ...")
 		val wifiMgr = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 		if (wifiMgr.wifiState == WifiManager.WIFI_STATE_ENABLED) {
 
 		}
 		val wifiInfo = wifiMgr.connectionInfo
+		var ip = wifiInfo.ipAddress
+		if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+			ip = Integer.reverseBytes(ip)
+		}
+		val ipByteArray = BigInteger.valueOf(ip.toLong()).toByteArray()
+		val ipStr = InetAddress.getByAddress(ipByteArray).hostAddress
 
-//		val ipAddress = formatIpAddress(wifiInfo.ipAddress)
-//		textView.setText("" + ipAddress)
+		ipText.text = "请用电脑浏览器访问：\nhttp://$ipStr:12345"
 
 	}
 
@@ -88,7 +103,11 @@ class UploadActivity : AppCompatActivity() {
 	}
 
 	private fun stopWebServer() {
-		println("Web Server Stopped ...")
+		ipText.text = "请连接到局域网WIFI，以上传图书！"
+		if (!running) {
+			return
+		}
+		running = false
 	}
 
 }
