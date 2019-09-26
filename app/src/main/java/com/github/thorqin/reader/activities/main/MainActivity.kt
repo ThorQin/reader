@@ -26,6 +26,10 @@ import kotlin.collections.ArrayList
 import java.text.Collator
 
 
+const val REQUEST_OPEN_SETTING = 1
+const val REQUEST_OPEN_BOOK = 2
+const val REQUEST_OPEN_UPLOAD = 3
+
 class MainActivity : AppCompatActivity() {
 
 	companion object {
@@ -62,7 +66,7 @@ class MainActivity : AppCompatActivity() {
 		if (app.config.lastRead != null && app.config.files.containsKey(app.config.lastRead!!)) {
 			val intent = Intent(this, BookActivity::class.java)
 			intent.putExtra("key", app.config.lastRead)
-			startActivityForResult(intent, 2)
+			startActivityForResult(intent, REQUEST_OPEN_BOOK)
 		}
 
 		requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -214,7 +218,7 @@ class MainActivity : AppCompatActivity() {
 						Manifest.permission.WRITE_EXTERNAL_STORAGE,
 						Manifest.permission.READ_EXTERNAL_STORAGE
 					),
-					1
+					REQUEST_OPEN_SETTING
 				)
 			} else {
 				searchBooksInternal()
@@ -292,12 +296,14 @@ class MainActivity : AppCompatActivity() {
 
 	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 		super.onActivityResult(requestCode, resultCode, data)
-		if (requestCode == 1) { // SETTING MAYBE CHANGED
+		if (requestCode == REQUEST_OPEN_SETTING) { // SETTING MAYBE CHANGED
 			searchBooks()
-		} else if (requestCode == 2) { // BOOK ACTIVITY CLOSED
+		} else if (requestCode == REQUEST_OPEN_BOOK) { // BOOK ACTIVITY CLOSED
 			showFiles()
 			app.config.lastRead = null
 			app.saveConfig()
+		} else if (requestCode == REQUEST_OPEN_UPLOAD) {
+			showFiles()
 		}
 	}
 
@@ -309,7 +315,7 @@ class MainActivity : AppCompatActivity() {
 
 	private fun showUpload() {
 		val intent = Intent(this, UploadActivity::class.java)
-		startActivity(intent)
+		startActivityForResult(intent, REQUEST_OPEN_UPLOAD)
 	}
 
 	private fun clearBooks() {

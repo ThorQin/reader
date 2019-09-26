@@ -1,5 +1,6 @@
 package com.github.thorqin.reader.utils
 
+import android.content.Context
 import com.google.gson.ExclusionStrategy
 import com.google.gson.FieldAttributes
 import com.google.gson.Gson
@@ -8,6 +9,7 @@ import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.net.NetworkInterface.getNetworkInterfaces
 import java.net.SocketException
+import java.nio.charset.Charset
 
 
 @Target(AnnotationTarget.FIELD)
@@ -65,7 +67,7 @@ private class MapTypeImpl(internal var keyClazz: Class<*>, internal var valueCla
 fun <K, V> makeMapType(keyType: Class<K>, valueType: Class<V>): Type {
 	return MapTypeImpl(keyType, valueType)
 }
-*/
+
 
 fun getLocalIpAddress(): String? {
 	try {
@@ -84,4 +86,13 @@ fun getLocalIpAddress(): String? {
 
 	}
 	return null
+}
+*/
+
+fun readTextResource(context: Context, resId: Int): String {
+	context.resources.openRawResource(resId).use {
+		it.reader(Charset.forName("utf-8")).use { textReader ->
+			return textReader.readText()
+		}
+	}
 }

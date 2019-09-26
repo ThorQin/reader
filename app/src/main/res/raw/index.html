@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>轻阅读</title>
+	<style>
+		html,
+		body {
+			display: flex;
+			flex-direction: column;
+			height: 100%;
+			margin: 0;
+			padding: 0;
+		}
+		body {
+			display:flex;
+			flex: 1;
+			flex-direction: column;
+			font-family: "Microsoft Yahei";
+			font-size: 14px;
+			color: #ccc;
+			background: #000;
+			padding: 20px;
+		}
+
+		.drag-box {
+			border-radius: 5px;
+			border: 2px dashed #888;
+			width: 100%;
+			height: 160px;
+			line-height: 160px;
+			text-align: center;
+			font-size: 18px;
+			user-select: none;
+			color: #888;
+		}
+		.active {
+			background-color: #555;
+		}
+		.book-list {
+			flex: 1;
+			min-height: 0;
+			border: 1px solid #888;
+			overflow-y: auto;
+		}
+		.book-list.empty {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			font-size: 20px;
+			color: #888;
+		}
+		.book-item {
+			padding: 20px;
+			margin: 5px;
+			background-color: #444;
+			font-size: 20px;
+		}
+	</style>
+</head>
+
+<body>
+	<h1 style="padding:20px 0">轻阅读 - 图书上传</h1>
+	<div id="uploadBox" class="drag-box">
+		拖拽文件到此处
+	</div>
+	<h1 style="padding:20px 0">图书列表</h1>
+	<div id="bookListDiv" class="book-list">
+
+	</div>
+	<script>
+		var ieVer = (function () {
+			var rv = -1; // Return value assumes failure.
+			if (navigator.appName === "Microsoft Internet Explorer" ||
+				navigator.appName === "Netscape") {
+				let ua = navigator.userAgent;
+				let re = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
+				if (re.exec(ua) !== null)
+					rv = parseFloat(RegExp.$1);
+			}
+			if (rv === -1 && navigator.appName === "Netscape") {
+				let ua = navigator.userAgent;
+				let re = new RegExp("Trident/([0-9]{1,}[\.0-9]{0,})");
+				if (re.exec(ua) !== null)
+					rv = parseFloat(RegExp.$1);
+				if (rv >= 7.0)
+					rv = 11.0;
+			}
+			return rv;
+		})()
+
+		function loadBookList() {
+			function showBookList(list) {
+				var bookBox = document.getElementById("bookListDiv")
+				bookBox.innerHTML = ""
+				if (list.length == 0) {
+					bookBox.innerHTML = "空"
+					bookBox.className = "book-list empty"
+				} else {
+					bookBox.className = "book-list"
+					list.sort(function(a, b) {
+						return a.name.localeCompare(b.name, "zh-Hans-CN")
+					})
+					for (let book of list) {
+						let row = document.createElement("div")
+						row.className = "book-item"
+						if (book.totalLength < 10486) {
+							row.innerHTML = book.name + " ( 大小：" + Math.round(book.totalLength / 1024 * 100) / 100 + "K )"
+						} else {
+							row.innerHTML = book.name + " ( 大小：" + Math.round(book.totalLength / 1024 / 1024 * 100) / 100 + "M )"
+						}
+						bookBox.appendChild(row)
+					}
+				}
+			}
+			showBookList([])
+			if (ieVer > 0) {
+				return
+			}
+			var xhr = new XMLHttpRequest();
+			try {
+				xhr.addEventListener("load", (e) => {
+					if (e.target.status != 200) {
+						showBookList([])
+					} else {
+						showBookList(JSON.parse(e.target.responseText))
+					}
+				}, false);
+				xhr.open("GET", "/books");
+				xhr.send();
+			} catch (e) {
+				error(e + "")
+			}
+		}
+
+		function upload(url, fileList, extraData) {
+			var fd = new FormData();
+			for (let file of fileList) {
+				fd.append("file", file, encodeURIComponent(file.name));
+			}
+			if (extraData) {
+				for (let key in extraData) {
+					if (extraData.hasOwnProperty(key)) {
+						fd.append(key, extraData[key]);
+					}
+				}
+			}
+			var xhr = new XMLHttpRequest();
+			xhr.upload.addEventListener("progress", (e) => {
+				if (e.lengthComputable) {
+					var percentComplete = Math.round(e.loaded * 100 / e.total);
+					box.innerHTML = ("上传中... " + percentComplete.toString() + '%');
+				}
+			}, false);
+			xhr.addEventListener("load", (e) => {
+				if (e.target.status != 200) {
+					error(e.target.response || e.target.statusText || e.target.status)
+				} else {
+					reset()
+					loadBookList()
+				}
+			}, false);
+			xhr.addEventListener("error", (e) => {
+				error("网络错误")
+			}, false);
+			xhr.addEventListener("abort", (e) => {
+				error("已取消")
+			}, false);
+			try {
+				xhr.open("POST", url);
+				xhr.send(fd);
+			} catch (e) {
+				error(e + "")
+			}
+		}
+
+		function reset() {
+			box.innerHTML = "拖拽文件到此处"
+			box.style.color = "#888"
+		}
+		var timer = null
+		function error(msg) {
+			box.innerHTML = "错误：" + msg
+				timer = setTimeout(function() {
+					reset()
+					timer = null
+				}, 2000)
+		}
+		function checkFiles(fileList) {
+
+			if (fileList.length == 0) {
+				return false
+			}
+			for (let f of fileList) {
+				if (!/\.(txt|epub)$/.test(f.name)) {
+					return false
+				}
+			}
+			return true
+		}
+
+		var box = document.getElementById("uploadBox")
+		if (ieVer < 0) {
+			box.ondrop = function (e) {
+				e.preventDefault()
+				if (typeof timer === "number") {
+					clearTimeout(timer)
+				}
+				box.className = "drag-box"
+				var fileList = e.dataTransfer.files
+				if (!checkFiles(fileList)) {
+					error("存在不支持的文件类型！")
+					return
+				}
+				upload("/upload", fileList)
+			}
+			box.ondragenter = function(e) {
+				e.preventDefault()
+				box.className = "drag-box active"
+			}
+			box.ondragover = function(e) {
+				e.preventDefault()
+			}
+			box.ondragleave = function(e) {
+				e.preventDefault()
+				box.className = "drag-box";
+			}
+			loadBookList()
+		} else {
+			box.innerHTML = "不支持IE浏览器!"
+		}
+	</script>
+</body>
+
+</html>

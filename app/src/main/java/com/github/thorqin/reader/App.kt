@@ -206,7 +206,11 @@ class App : Application() {
 				} else {
 					0f
 				}
-				return "大小：${(totalLength.toDouble() / 1024 / 1024 * 100).roundToInt() / 100.0}M  阅读：$p%"
+				return if (totalLength < 10486) {
+					"大小：${(totalLength.toDouble() / 1024 * 100).roundToInt() / 100.0}K  阅读：$p%"
+				} else {
+					"大小：${(totalLength.toDouble() / 1024 / 1024 * 100).roundToInt() / 100.0}M  阅读：$p%"
+				}
 			}
 	}
 
