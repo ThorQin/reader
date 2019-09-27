@@ -24,6 +24,7 @@ import java.lang.Exception
 import java.util.*
 import kotlin.collections.ArrayList
 import java.text.Collator
+import java.util.regex.Pattern
 
 
 const val REQUEST_OPEN_SETTING = 1
@@ -118,13 +119,17 @@ class MainActivity : AppCompatActivity() {
 	}
 
 
+	private val pathPattern = Pattern.compile("^[-0-9a-z]{32,}$", Pattern.CASE_INSENSITIVE)
 	private fun searchPath(path: File, found: ArrayList<File>, level: Int) {
 		val files = path.listFiles() ?: return
 		for (f in files) {
 			setScanFile(f.absolutePath)
 			if (f.isDirectory) {
-				if (level < 4)
+				if (pathPattern.matcher(f.name).matches()) {
+					// println(f.name)
+				} else if (level < 4) {
 					searchPath(f, found, level + 1)
+				}
 			} else if (TEXT_FILE.matches(f.name)) {
 				if (f.length() >= MIN_FILE_SIZE)
 					found.add(f)

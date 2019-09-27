@@ -1,4 +1,6 @@
 *.iml
+.project
+.settings
 .gradle
 .idea
 /local.properties
@@ -13,3 +15,4 @@
 /captures
 .externalNativeBuild
 .cxx
+/app/release

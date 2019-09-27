@@ -14,6 +14,7 @@ import android.os.Environment
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.utils.json
 import com.github.thorqin.reader.utils.readTextResource
+import com.koushikdutta.async.AsyncServer
 import com.koushikdutta.async.http.body.MultipartFormDataBody
 import kotlinx.android.synthetic.main.activity_upload.*
 import kotlinx.android.synthetic.main.settings_activity.toolbar
@@ -200,6 +201,7 @@ class UploadActivity : AppCompatActivity() {
 		}
 		try {
 			server.stop()
+			AsyncServer.getDefault().stop()
 		} catch (e: Exception) {
 			System.err.println("Stop server error: ${e.message}")
 		}
