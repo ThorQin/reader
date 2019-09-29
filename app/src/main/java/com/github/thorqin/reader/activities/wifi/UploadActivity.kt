@@ -36,7 +36,7 @@ class UploadActivity : AppCompatActivity() {
 		}
 
 	private var running = false
-	var server = AsyncHttpServer()
+	private var server = AsyncHttpServer()
 
 	private val wifiStateReceiver = object: BroadcastReceiver() {
 		override fun onReceive(context: Context?, intent: Intent?) {
@@ -77,7 +77,9 @@ class UploadActivity : AppCompatActivity() {
 		val connManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 		val networks = connManager.allNetworks
 		for (n in networks) {
-			val info = connManager.getNetworkInfo(n)
+			@Suppress("DEPRECATION")
+			val info = connManager.getNetworkInfo(n) ?: continue
+			@Suppress("DEPRECATION")
 			if (info.type == ConnectivityManager.TYPE_WIFI && info.isConnected) {
 				startWebServer()
 				return
@@ -105,13 +107,14 @@ class UploadActivity : AppCompatActivity() {
 			val ipStr = InetAddress.getByAddress(ipByteArray).hostAddress
 			server.listen(LISTEN_PORT)
 			println("Web Server Started ...")
-			ipText.text = "请用电脑浏览器访问：\nhttp://$ipStr:$LISTEN_PORT"
+			ipText.text = resources.getString(R.string.use_browser, ipStr, LISTEN_PORT)
 		} catch (e: Exception) {
 			stopWebServer()
 		}
 	}
 
 	private fun init() {
+		@Suppress("DEPRECATION")
 		val extRoot = Environment.getExternalStorageDirectory()
 		val bookRoot = extRoot.resolve("com.github.thorqin.reader")
 		bookRoot.mkdir()
@@ -195,7 +198,7 @@ class UploadActivity : AppCompatActivity() {
 	}
 
 	private fun stopWebServer() {
-		ipText.text = "请连接到局域网WIFI，以上传图书！"
+		ipText.text = getString(R.string.need_wifi)
 		if (!running) {
 			return
 		}

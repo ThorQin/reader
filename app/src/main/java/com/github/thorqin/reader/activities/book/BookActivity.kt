@@ -73,6 +73,10 @@ class BookActivity : AppCompatActivity() {
 		handler = Handler(Looper.getMainLooper())
 
 		val key = intent.getStringExtra("key")
+		if (key == null) {
+			this.finish()
+			return
+		}
 		if (!app.config.files.containsKey(key)) {
 			app.toast(getString(R.string.invalid_config))
 			finish()
@@ -331,7 +335,7 @@ class BookActivity : AppCompatActivity() {
 							// IS CLICK
 							if (startX!! > boxWidth / 4 && startX!! < boxWidth / 4 * 3) {
 								toggleActionBar()
-							} else if (startX!! < boxWidth / 4) {
+							} else if (startX!! < boxWidth / 4 && !atBegin) {
 								if (app.config.clickToFlip) {
 									// flip to previous page
 									val moveView = flipper.getChildAt(2)
@@ -348,7 +352,7 @@ class BookActivity : AppCompatActivity() {
 										}, 50)
 									}
 								}
-							} else if (startX!! > boxWidth / 4 * 3) {
+							} else if (startX!! > boxWidth / 4 * 3 && !atEnd) {
 								if (app.config.clickToFlip) {
 									val moveView = flipper.getChildAt(1)
 									moveView.elevation = 20f

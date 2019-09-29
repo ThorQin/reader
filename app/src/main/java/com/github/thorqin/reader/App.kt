@@ -452,7 +452,7 @@ class App : Application() {
 	fun clearBook() {
 		val path = filesDir.resolve("books")
 		if (path.isDirectory) {
-			for (f in path.listFiles()) {
+			for (f in path.listFiles()!!) {
 				if (f.isFile)
 					f.delete()
 			}

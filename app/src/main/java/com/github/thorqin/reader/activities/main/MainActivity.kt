@@ -27,6 +27,7 @@ import java.text.Collator
 import java.util.regex.Pattern
 
 
+
 const val REQUEST_OPEN_SETTING = 1
 const val REQUEST_OPEN_BOOK = 2
 const val REQUEST_OPEN_UPLOAD = 3
@@ -149,6 +150,7 @@ class MainActivity : AppCompatActivity() {
 		val found = ArrayList<File>()
 		val thread = Thread {
 			try {
+				@Suppress("DEPRECATION")
 				val p = Environment.getExternalStorageDirectory()
 				rootPathLength = p.absolutePath.length
 				if (p.isDirectory) {
@@ -313,8 +315,11 @@ class MainActivity : AppCompatActivity() {
 	}
 
 	private fun showAbout() {
+		val pkgInfo = packageManager.getPackageInfo(packageName, 0)
+		val versionName = pkgInfo.versionName
+
 		AlertDialog.Builder(this, R.style.dialogStyle).setTitle(getString(R.string.app_name))
-			.setMessage(getString(R.string.about_me))
+			.setMessage(String.format(getString(R.string.about_me), versionName))
 			.setCancelable(true).show()
 	}
 
