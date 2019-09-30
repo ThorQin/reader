@@ -243,6 +243,7 @@ class BookActivity : AppCompatActivity() {
 				MotionEvent.ACTION_MOVE -> {
 					if (startX != null) {
 						if (surface == null) {
+							@Suppress("ControlFlowWithEmptyBody")
 							if (event.rawX > startX!! && atBegin) {
 								// do nothing
 							} else if (event.rawX < startX!! && atEnd) {
@@ -337,36 +338,11 @@ class BookActivity : AppCompatActivity() {
 								toggleActionBar()
 							} else if (startX!! < boxWidth / 4 && !atBegin) {
 								if (app.config.clickToFlip) {
-									// flip to previous page
-									val moveView = flipper.getChildAt(2)
-									moveView.elevation = 20f
-									moveViewTo(moveView, 0f) {
-										val bottomView = flipper.getChildAt(0)
-										flipper.removeViewAt(0)
-										flipper.addView(bottomView)
-										setPos()
-										moveView.elevation = 0f
-										fileInfo.previous()
-										handler.postDelayed({
-											showContent(false)
-										}, 50)
-									}
+									prevPage()
 								}
 							} else if (startX!! > boxWidth / 4 * 3 && !atEnd) {
 								if (app.config.clickToFlip) {
-									val moveView = flipper.getChildAt(1)
-									moveView.elevation = 20f
-									moveViewTo(moveView, -boxWidth) {
-										val topView = flipper.getChildAt(2)
-										flipper.removeViewAt(2)
-										flipper.addView(topView, 0)
-										setPos()
-										moveView.elevation = 0f
-										fileInfo.next()
-										handler.postDelayed({
-											showContent(false)
-										}, 50)
-									}
+									nextPage()
 								}
 							}
 						}
@@ -408,6 +384,56 @@ class BookActivity : AppCompatActivity() {
 
 		openBook()
 		keepScreenOn()
+	}
+
+	private fun prevPage() {
+		if (!atBegin) {
+			val moveView = flipper.getChildAt(2)
+			moveView.elevation = 20f
+			moveViewTo(moveView, 0f) {
+				val bottomView = flipper.getChildAt(0)
+				flipper.removeViewAt(0)
+				flipper.addView(bottomView)
+				setPos()
+				moveView.elevation = 0f
+				fileInfo.previous()
+				handler.postDelayed({
+					showContent(false)
+				}, 50)
+			}
+		}
+	}
+
+	private fun nextPage() {
+		if (!atEnd) {
+			val moveView = flipper.getChildAt(1)
+			moveView.elevation = 20f
+			moveViewTo(moveView, -boxWidth) {
+				val topView = flipper.getChildAt(2)
+				flipper.removeViewAt(2)
+				flipper.addView(topView, 0)
+				setPos()
+				moveView.elevation = 0f
+				fileInfo.next()
+				handler.postDelayed({
+					showContent(false)
+				}, 50)
+			}
+		}
+	}
+
+	override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+		return when (keyCode) {
+			KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_PAGE_UP -> {
+				prevPage()
+				true
+			}
+			KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_PAGE_DOWN -> {
+				nextPage()
+				true
+			}
+			else -> super.onKeyUp(keyCode, event)
+		}
 	}
 
 	@SuppressLint("RtlHardcoded")
