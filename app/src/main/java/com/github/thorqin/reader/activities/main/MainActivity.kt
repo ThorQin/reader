@@ -35,7 +35,7 @@ const val REQUEST_OPEN_UPLOAD = 3
 class MainActivity : AppCompatActivity() {
 
 	companion object {
-		val TEXT_FILE = Regex(".+\\.txt$", RegexOption.IGNORE_CASE)
+		val TEXT_FILE = Regex(".+\\.(txt|epub)$", RegexOption.IGNORE_CASE)
 		const val MIN_FILE_SIZE = 1024 * 200
 
 	}

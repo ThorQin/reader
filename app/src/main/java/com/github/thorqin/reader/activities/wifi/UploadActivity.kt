@@ -113,6 +113,7 @@ class UploadActivity : AppCompatActivity() {
 		}
 	}
 
+	private val bookNamePattern = Regex(".+\\.(txt|epub)$", RegexOption.IGNORE_CASE)
 	private fun init() {
 		@Suppress("DEPRECATION")
 		val extRoot = Environment.getExternalStorageDirectory()
@@ -132,25 +133,26 @@ class UploadActivity : AppCompatActivity() {
 				body.setMultipartCallback { part ->
 					if (part.isFile) {
 						val filename = URLDecoder.decode(part.filename, "utf-8")
-						println("Uploading file: $filename")
-						val file = bookRoot.resolve(filename)
-						fileStream?.close()
-						try {
-							fileStream = file.outputStream()
-							uploadFileList.add(file)
-						} catch (e: Exception) {
-							fileStream = null
-						}
-						body.setDataCallback { _, bufferList ->
+						if (bookNamePattern.matches(filename)) {
+							println("Uploading file: $filename")
+							val file = bookRoot.resolve(filename)
+							fileStream?.close()
 							try {
-								val bytes = bufferList.allByteArray
-								println("data: ${bytes.size} ")
-								fileStream?.write(bytes)
+								fileStream = file.outputStream()
+								uploadFileList.add(file)
 							} catch (e: Exception) {
-								System.err.println("Upload file error: ${e.message}")
+								fileStream = null
+							}
+							body.setDataCallback { _, bufferList ->
+								try {
+									val bytes = bufferList.allByteArray
+									println("data: ${bytes.size} ")
+									fileStream?.write(bytes)
+								} catch (e: Exception) {
+									System.err.println("Upload file error: ${e.message}")
+								}
 							}
 						}
-
 					}
 				}
 				request.setEndCallback {

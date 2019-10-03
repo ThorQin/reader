@@ -23,6 +23,8 @@ import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.activities.setting.SettingsActivity
+import com.github.thorqin.reader.utils.EPub
+import com.github.thorqin.reader.utils.detectCharset
 import java.io.File
 import java.lang.Exception
 import java.nio.charset.Charset
@@ -794,12 +796,12 @@ class BookActivity : AppCompatActivity() {
 		}
 	}
 
-	private fun parseFile(file: File, pattern: Pattern): App.FileDetail {
+	private fun parseFile(file: File, pattern: Pattern, bookName: String): App.FileDetail {
 
 		lateinit var charset: String
 		file.inputStream().use {
 			// Firstly we should detect file encoding
-			charset = App.detectCharset(it)
+			charset = detectCharset(it)
 		}
 
 		file.reader(Charset.forName(charset)).use {
@@ -813,8 +815,9 @@ class BookActivity : AppCompatActivity() {
 			var beginChapter = true
 			val fileInfo: App.FileDetail = App.FileDetail()
 			fileInfo.encoding = charset
-			fileInfo.name = summary.name
+			fileInfo.name = bookName
 			fileInfo.fontSize = app.config.fontSize
+			val emptyChapters = hashMapOf<String, App.Chapter>()
 
 			var chapter = App.Chapter()
 			chapter.name = fileInfo.name
@@ -828,12 +831,18 @@ class BookActivity : AppCompatActivity() {
 									chapter.endPoint = lineStart
 									val str = content.subSequence(0, content.length - lineSize).trimEnd()
 									parseChapter(chapter, str, str.length)
+									if (chapter.isEmpty) { // Remove index only chapter
+										emptyChapters[chapter.name] = chapter
+									} else {
+										emptyChapters[chapter.name]?.delete = true
+									}
 									fileInfo.chapters.add(chapter)
 									chapter = App.Chapter()
 									chapter.name = line.trim().toString()
 									beginChapter = true
 									content.clear()
 									line.clear()
+									lineSize = 0
 								}
 								c != null -> {
 									content.append(c)
@@ -844,6 +853,11 @@ class BookActivity : AppCompatActivity() {
 									chapter.endPoint = scan
 									val str = content.trimEnd()
 									parseChapter(chapter, str, str.length)
+									if (chapter.isEmpty) {
+										emptyChapters[chapter.name] = chapter
+									} else {
+										emptyChapters[chapter.name]?.delete = true
+									}
 									fileInfo.chapters.add(chapter)
 								}
 							}
@@ -856,6 +870,11 @@ class BookActivity : AppCompatActivity() {
 							chapter.endPoint = scan
 							val str = content.trimEnd()
 							parseChapter(chapter, str, str.length)
+							if (chapter.isEmpty) {
+								emptyChapters[chapter.name] = chapter
+							} else {
+								emptyChapters[chapter.name]?.delete = true
+							}
 							fileInfo.chapters.add(chapter)
 						}
 					}
@@ -893,8 +912,16 @@ class BookActivity : AppCompatActivity() {
 			}
 			testEnd(null)
 
-			for (i in 0 until fileInfo.chapters.size) {
-				fileInfo.totalPages += fileInfo.chapters[i].pages.size
+			var i = 0
+			while (i < fileInfo.chapters.size) {
+				if (fileInfo.chapters[i].delete) {
+					fileInfo.chapters.removeAt(i)
+				} else {
+					i++
+				}
+			}
+			for (j in 0 until fileInfo.chapters.size) {
+				fileInfo.totalPages += fileInfo.chapters[j].pages.size
 			}
 
 			return fileInfo
@@ -902,6 +929,7 @@ class BookActivity : AppCompatActivity() {
 		}
 	}
 
+	private val emptyRegex = Regex("(\\s|\\n|\\r)*", RegexOption.MULTILINE)
 	private fun parseChapter(
 		chapter: App.Chapter,
 		content: CharSequence,
@@ -931,6 +959,9 @@ class BookActivity : AppCompatActivity() {
 			page.length = 0
 			chapter.pages.add(page)
 		}
+		if (emptyRegex.matches(content)) {
+			chapter.isEmpty = true
+		}
 
 	}
 
@@ -938,19 +969,27 @@ class BookActivity : AppCompatActivity() {
 		val topicRule = if (!::fileInfo.isInitialized || fileInfo.topicRule == null) App.TOPIC_RULE else fileInfo.topicRule!!
 		bufferView.textSize = app.config.fontSize.value
 		val pattern: Pattern = try {
-			Pattern.compile(topicRule.replace(Regex.fromLiteral("\\s+"), ""), Pattern.CASE_INSENSITIVE)
+			Pattern.compile(topicRule.replace(Regex("\\s+"), ""), Pattern.CASE_INSENSITIVE)
 		} catch (e: Exception) {
 			Pattern.compile(App.TOPIC_RULE, Pattern.CASE_INSENSITIVE)
 		}
 		try {
+			var txtFilePath = summary.path
+			var bookName = summary.name
+			if (summary.path.endsWith(".epub", ignoreCase = true)) {
+				txtFilePath = summary.path.substring(0, summary.path.length - 4) + "text"
+				if (!File(txtFilePath).exists()) {
+					bookName = EPub.epub2txt(summary.path, txtFilePath) ?: summary.name
+				}
+			}
+
 			applySize()
-			val file = File(summary.path)
-			fileInfo = parseFile(file, pattern)
+			val file = File(txtFilePath)
+			fileInfo = parseFile(file, pattern, bookName)
 			fileInfo.topicRule = topicRule
 			app.config.lastRead = summary.key
 			fileInfo.key = summary.key
-			fileInfo.name = summary.name
-			fileInfo.path = summary.path
+			fileInfo.path = txtFilePath
 			fileInfo.screenWidth = width
 			fileInfo.screenHeight = height
 			seekBar.max = fileInfo.totalPages - 1
