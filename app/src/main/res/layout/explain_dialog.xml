@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+	<TextView
+		android:id="@+id/explain_title"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textSize="28dp"
+		android:textColor="@color/colorWhite"
+		android:padding="10dp"
+		android:drawableLeft="@drawable/ic_search_white_24dp"
+		android:text="" />
+	<View android:background="@color/colorWorkspaceHighlight"
+		android:layout_width="match_parent"
+		android:layout_height="1dp"
+		/>
+
+	<TextView
+		android:visibility="gone"
+		android:id="@+id/explain_phonetic"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:maxLines="3"
+		android:padding="10dp"
+		android:scrollbars="none"
+		android:text=""
+		android:textStyle="bold"
+		android:textColor="@color/colorWhite"
+		android:textSize="18dp" />
+	<View
+		android:id="@+id/phonetic_line"
+		android:visibility="gone"
+		android:background="@color/colorWorkspaceHighlight"
+		android:layout_width="match_parent"
+		android:layout_height="1dp"
+		/>
+
+	<TextView
+		android:id="@+id/explain_description"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1"
+		android:maxLines="15"
+		android:minLines="5"
+		android:padding="10dp"
+		android:scrollbars="vertical"
+		android:text=""
+		android:textColor="@color/colorWorkspaceHighlight"
+		android:textSize="18dp" />
+</LinearLayout>

@@ -6,7 +6,11 @@ import android.view.View
 import com.github.thorqin.reader.App
 import kotlin.math.floor
 import android.graphics.*
+import android.view.MotionEvent
 import kotlin.math.ceil
+import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+
+
 
 
 class BookView : View {
@@ -27,6 +31,8 @@ class BookView : View {
 	private lateinit var paint: Paint
 	private lateinit var descPaint: Paint
 	private lateinit var titlePaint: Paint
+//	private lateinit var debugPaint: Paint
+
 	private var cw = 0f
 	private var lh = 0
 	private var paintWidth = 0f
@@ -69,6 +75,60 @@ class BookView : View {
 		invalidate()
 	}
 
+	private fun isAscii(c: Char): Boolean {
+		return c in 'a'..'z' || c in 'A'..'Z'
+	}
+
+	private fun chooseText(txt: String, pos: Int): String? {
+		val c = txt[pos]
+		val ub = Character.UnicodeBlock.of(c)
+		if (c in 'a'..'z' || c in 'A'..'Z') {
+			var start = pos
+			var end = pos + 1
+			while (start > 0) {
+				if (isAscii(txt[start - 1])) {
+					start--
+				} else {
+					break
+				}
+			}
+			while (end < txt.length) {
+				if (isAscii(txt[end])) {
+					end++
+				} else {
+					break
+				}
+			}
+			return txt.substring(start, end)
+		} else if (ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS ||
+			ub == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS ||
+			ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A) {
+			return c.toString()
+		} else {
+			return null
+		}
+	}
+
+	fun hitTest(x: Float, y: Float): String? {
+		val caption = if (chapterName.isEmpty()) this.bookName else chapterName
+		var hitTheTarget = false
+		var result: String? = null
+		if (pageIndex == 0) {
+			drawTitle(null, caption, HitTest(x, y) {
+				hitTheTarget = true
+				result = chooseText(caption, it)
+			})
+			if (hitTheTarget) {
+				return result
+			}
+		}
+		drawContent(null, HitTest(x, y) {
+			hitTheTarget = true
+			result = chooseText(text, it)
+		})
+		return result
+	}
+
 	private fun createPaint() {
 		descPaint = Paint()
 		descPaint.typeface = Typeface.MONOSPACE
@@ -87,6 +147,11 @@ class BookView : View {
 		titlePaint.textSize = App.dip2px(context, textSize * 1.5f).toFloat()
 		titlePaint.color = Color.parseColor(textColor)
 		titlePaint.isAntiAlias = true
+
+//		debugPaint = Paint()
+//		debugPaint.style = Paint.Style.STROKE
+//		debugPaint.color = Color.parseColor(textColor)
+//		debugPaint.strokeWidth = 1f
 
 		lh = App.dip2px(context, (textSize * 1.5).toFloat())
 	}
@@ -118,40 +183,6 @@ class BookView : View {
 		titleCw = ceil(titlePaint.measureText(" "))
 	}
 
-
-	private val zero = 0.toChar()
-
-	private fun drawTitle(canvas: Canvas, title: String) {
-
-		var t = paintTop
-		val l = paintLeft
-		val lh = _titleRect.bottom - _titleRect.top
-
-		var lw = 0f
-		var line = 1
-		for (c in title) {
-			val w = if (c > zero && c < 256.toChar()) {
-				titleCw
-			} else {
-				2 * titleCw
-			}
-			if (lw + w > paintWidth) {
-				if (line < 2) {
-					lw = 0f
-					t += lh + 3 * pxPerDp
-					line++
-				} else {
-					break
-				}
-			}
-			canvas.drawText(c.toString(), paintLeft + lw, t -_titleRect.top, titlePaint)
-			lw += w
-		}
-		t += lh + 3 * pxPerDp
-		canvas.drawRect(l, t,
-			l + paintWidth, t + 1 * pxPerDp.toFloat(), titlePaint)
-	}
-
 	override fun onDraw(canvas: Canvas?) {
 		if (canvas == null) {
 			return
@@ -166,15 +197,64 @@ class BookView : View {
 		canvas.drawText(this.progressInfo, paintWidth - descWidth - pxPerDp * 20, paintTop + paintHeight + startY.toFloat() - 5 * pxPerDp, descPaint)
 
 		if (pageIndex == 0) {
-			drawTitle(canvas, caption)
+			drawTitle(canvas, caption, null)
 		}
+		drawContent(canvas, null)
+	}
 
+	private val zero = 0.toChar()
+
+	private class HitTest(val x: Float, val y: Float, val onHit: (pos: Int) -> Unit)
+
+	private fun drawTitle(canvas: Canvas?, title: String, hitTest: HitTest?) {
+		var t = paintTop
+		val l = paintLeft
+		val lh = _titleRect.bottom - _titleRect.top
+
+		var lw = 0f
+		var line = 1
+		for ((i,c) in title.withIndex()) {
+			val w = if (c > zero && c < 256.toChar()) {
+				titleCw
+			} else {
+				2 * titleCw
+			}
+			if (lw + w > paintWidth) {
+				if (line < 2) {
+					lw = 0f
+					t += lh + 3 * pxPerDp
+					line++
+				} else {
+					break
+				}
+			}
+			if (hitTest != null) {
+				if (hitTest.x > paintLeft + lw && hitTest.x < paintLeft + lw + w &&
+					hitTest.y > t && hitTest.y < t + lh) {
+					hitTest.onHit(i)
+				}
+			} else {
+//				canvas?.drawRect(paintLeft + lw, t, paintLeft + lw + w, t + lh, debugPaint)
+				canvas?.drawText(c.toString(), paintLeft + lw, t -_titleRect.top, titlePaint)
+			}
+			lw += w
+		}
+		if (hitTest == null) {
+			t += lh + 3 * pxPerDp
+			canvas?.drawRect(
+				l, t,
+				l + paintWidth, t + 1 * pxPerDp.toFloat(), titlePaint
+			)
+		}
+	}
+
+	private fun drawContent(canvas: Canvas?, hitTest: HitTest?) {
 		val totalLines = floor(paintHeight.toDouble() / lh).toInt()
 		var l = if (pageIndex == 0) 3 else 0
 		var lw = 0f
 
 		var begin = true
-		for (c in text) {
+		for ((i, c) in text.withIndex()) {
 			if (c == '\r') {
 				continue
 			}
@@ -204,7 +284,16 @@ class BookView : View {
 					return
 				}
 			}
-			canvas.drawText(c.toString(), paintLeft + lw, paintTop + startY + l * lh, paint)
+			if (hitTest != null) {
+				if (hitTest.x > paintLeft + lw && hitTest.x < paintLeft + lw + w &&
+					hitTest.y > paintTop + l * lh && hitTest.y < paintTop + (l + 1) * lh) {
+					hitTest.onHit(i)
+					return
+				}
+			} else {
+//				canvas?.drawRect(paintLeft + lw, paintTop + l * lh, paintLeft + lw + w, paintTop + (l + 1) * lh, debugPaint)
+				canvas?.drawText(c.toString(), paintLeft + lw, paintTop + startY + l * lh, paint)
+			}
 			lw += w
 		}
 	}

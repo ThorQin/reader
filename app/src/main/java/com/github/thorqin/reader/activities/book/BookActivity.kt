@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.text.method.ScrollingMovementMethod
 import android.view.*
 import android.view.View.*
 import android.widget.EditText
@@ -25,8 +26,14 @@ import com.github.thorqin.reader.App
 import com.github.thorqin.reader.activities.setting.SettingsActivity
 import com.github.thorqin.reader.utils.EPub
 import com.github.thorqin.reader.utils.detectCharset
+import com.github.thorqin.reader.utils.json
+import com.github.thorqin.reader.utils.makeListType
+import com.koushikdutta.async.http.AsyncHttpClient
+import com.koushikdutta.async.http.AsyncHttpGet
+import com.koushikdutta.async.http.AsyncHttpResponse
 import java.io.File
 import java.lang.Exception
+import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.util.*
 import java.util.regex.Pattern
@@ -218,6 +225,8 @@ class BookActivity : AppCompatActivity() {
 
 
 		var startX: Float? = null
+		var startY: Float? = null
+		var hitTestRunable: Runnable? = null
 		var viewX: Float? = null
 		var moveDirection: Direction = Direction.LEFT
 		flipper.setOnTouchListener { _, event ->
@@ -238,12 +247,33 @@ class BookActivity : AppCompatActivity() {
 						}
 						else -> {
 							startX = event.rawX
+							startY = event.y
+							println("x: $startX, y: $startY")
+							hitTestRunable = Runnable {
+								hitTestRunable = null
+								val currentView = flipper.getChildAt(1) as BookView
+								val hitResult = currentView.hitTest(event.rawX, event.y)
+								if (hitResult != null) {
+									explain(hitResult)
+									startX = null
+									startY = null
+									viewX = null
+								}
+							}
+							handler.postDelayed(hitTestRunable,400)
 							surface == null
 						}
 					}
 				}
 				MotionEvent.ACTION_MOVE -> {
 					if (startX != null) {
+						val diffX = abs(event.rawX - startX!!)
+						val diffY = abs(event.y - startY!!)
+						// println("diffX: $diffX diffY: $diffY")
+						if (hitTestRunable != null && (diffX >= 10 || diffY >= 10)) {
+							handler.removeCallbacks(hitTestRunable)
+							hitTestRunable = null
+						}
 						if (surface == null) {
 							@Suppress("ControlFlowWithEmptyBody")
 							if (event.rawX > startX!! && atBegin) {
@@ -261,8 +291,7 @@ class BookActivity : AppCompatActivity() {
 
 								viewX = surface?.translationX
 							}
-						}
-						if (surface != null) {
+						} else {
 							surface?.elevation = 20f
 							when (moveDirection) {
 								Direction.RIGHT -> {
@@ -277,10 +306,8 @@ class BookActivity : AppCompatActivity() {
 								}
 							}
 						}
-						true
-					} else {
-						true
 					}
+					true
 				}
 				MotionEvent.ACTION_UP -> {
 					val diff = boxWidth / 8
@@ -334,7 +361,7 @@ class BookActivity : AppCompatActivity() {
 							}
 						}
 					} else {
-						if (startX != null && abs(event.rawX - startX!!) < 10) {
+						if (startX != null && abs(event.rawX - startX!!) < 10 && startY != null && abs(event.y - startY!!) < 10) {
 							// IS CLICK
 							if (startX!! > boxWidth / 4 && startX!! < boxWidth / 4 * 3) {
 								toggleActionBar()
@@ -350,6 +377,11 @@ class BookActivity : AppCompatActivity() {
 						}
 					}
 					startX = null
+					startY = null
+					if (hitTestRunable != null) {
+						handler.removeCallbacks(hitTestRunable)
+						hitTestRunable = null
+					}
 					viewX = null
 					true
 				}
@@ -1150,6 +1182,112 @@ class BookActivity : AppCompatActivity() {
 			resetButton.setOnClickListener {
 				et.setText(App.TOPIC_RULE)
 			}
+		}
+		dialog.show()
+	}
+
+	private class Dict {
+		var word: String? = null
+		var phonetic: String? = null
+		var definition: String? = null
+		var translation: String? = null
+		var exchange: String? = null
+	}
+
+	private fun explain(txt: String) {
+		var cancelled = false
+		val listType = makeListType(Dict::class.java)
+
+		val layout = inflate(this, R.layout.explain_dialog, null)
+		val title = layout.findViewById<TextView>(R.id.explain_title)
+		val phonetic = layout.findViewById<TextView>(R.id.explain_phonetic)
+		val phoneticLine = layout.findViewById<View>(R.id.phonetic_line)
+
+		title.compoundDrawablePadding = 20
+		title.text = txt
+		val desc = layout.findViewById<TextView>(R.id.explain_description)
+		desc.movementMethod = ScrollingMovementMethod()
+		desc.text = "查询中..."
+		val word = URLEncoder.encode(txt, "utf-8")
+		val request = AsyncHttpGet("http://138.91.1.176:8080/dict/translate?word=$word")
+
+		AsyncHttpClient.getDefaultInstance().executeString(request,
+			object:AsyncHttpClient.StringCallback() {
+    	override fun onCompleted(e: Exception?, response: AsyncHttpResponse?, result: String?) {
+        if (e != null) {
+          e.printStackTrace()
+					runOnUiThread {
+						if (!cancelled) {
+							desc.text = "错误：" + e.message
+						}
+					}
+					return
+        }
+
+				println("result: $result")
+
+				val list = json().fromJson(result, listType) as List<Dict>
+				val p = java.lang.StringBuilder()
+				val d = java.lang.StringBuilder()
+				val t = java.lang.StringBuilder()
+				var hasPhonetic = false
+				var hasDefinition = false
+				var hasTranslation = false
+				for (dict in list) {
+					if (!dict.phonetic.isNullOrEmpty()) {
+						if (hasPhonetic) {
+							p.append(", ")
+						}
+						p.append(dict.phonetic)
+						hasPhonetic = true
+					}
+					if (!dict.definition.isNullOrEmpty()) {
+						if (hasDefinition) {
+							d.append("\n\n")
+						}
+						d.append(dict.definition)
+						hasDefinition = true
+					}
+					if (!dict.translation.isNullOrEmpty()) {
+						if (hasTranslation) {
+							t.append("\n\n")
+						}
+						t.append(dict.translation)
+						hasTranslation = true
+					}
+				}
+				var descText = ""
+				if (hasDefinition) {
+					descText = "定义：\n$d"
+				}
+				if (hasTranslation) {
+					if (hasDefinition) {
+						descText += "\n\n"
+					}
+					descText += "翻译：\n$t"
+				}
+				runOnUiThread {
+					if (!cancelled) {
+						if (hasPhonetic) {
+							phonetic.text = "发音：$p"
+							phonetic.visibility = VISIBLE
+							phoneticLine.visibility = VISIBLE
+						} else {
+							phonetic.visibility = GONE
+							phoneticLine.visibility = GONE
+						}
+						desc.text = descText
+					}
+				}
+    	}
+		})
+
+		val dialog = AlertDialog.Builder(this, R.style.dialogStyle)
+			.setView(layout)
+			.setCancelable(true)
+			.create()
+		dialog.setOnCancelListener {
+			cancelled = true
 		}
 		dialog.show()
 	}

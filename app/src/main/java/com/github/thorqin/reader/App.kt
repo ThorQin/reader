@@ -241,9 +241,9 @@ class App : Application() {
 		private const val RULE2 = "[0-9]+"
 		private const val RULE3 = "[零一二三四五六七八九十百千万]+"
 		private const val RULE4 = "卷\\s*[0-9零一二三四五六七八九十百千万]+"
-		private const val RULE5 = "主?目录|序章?|引子|返回主?目录"
+		private const val RULE5 = "前言|主?目录|序章?|引子|返回主?目录"
 		private const val RULE6 = "Chapter\\s+[0-9]+"
-		private const val SUFFIX = "(?:[、，\\s]+\\S+|\\s*$)"
+		private const val SUFFIX = "(?:[、\\s]+\\S+|\\s*$)"
 		const val TOPIC_RULE = "$PREFIX(?:$RULE1|$RULE2|$RULE3|$RULE4|$RULE5|$RULE6)$SUFFIX"
 
 
@@ -289,6 +289,10 @@ class App : Application() {
 			}
 			dlg.setCancelable(true)
 			dlg.show()
+		}
+
+		fun toast(context: Context, msg: String) {
+			Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
 		}
 	}
 

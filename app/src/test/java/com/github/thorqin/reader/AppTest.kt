@@ -11,4 +11,14 @@ class AppTest {
 		println(App.TOPIC_RULE.replace(reg, ""))
 	}
 
+	@Test
+	fun testLoop() {
+		for (i in 0..5) {
+			println(i)
+		}
+
+		for (i in (0..5).reversed()) {
+			println(i)
+		}
+	}
 }
