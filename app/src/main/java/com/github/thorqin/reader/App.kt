@@ -18,6 +18,11 @@ import java.io.PushbackInputStream
 import java.lang.Exception
 import java.nio.charset.Charset
 import java.security.MessageDigest
+import java.util.*
+import java.util.zip.ZipInputStream
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import kotlin.concurrent.thread
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -301,6 +306,7 @@ class App : Application() {
 	override fun onCreate() {
 		super.onCreate()
 		config = load()
+		initChinesePhrase()
 	}
 
 	private fun load(): AppConfig {
@@ -394,6 +400,45 @@ class App : Application() {
 
 	fun toast(msg: String) {
 		Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+	}
+
+	private var phraseSet: Set<String>? = null
+
+	private fun initChinesePhrase() {
+		thread(start = true, isDaemon = true) {
+			try {
+				val newSet = HashSet<String>(276900)
+				this.resources.openRawResource(R.raw.words).use {
+					ZipInputStream(it).use { zip ->
+						val buffer = ByteArray(1024 * 1024 * 3)
+						zip.nextEntry
+						val size = it.read(buffer)
+						val tokenizer = StringTokenizer(String(buffer, 0, size, Charset.forName("utf-8")), ",")
+						while (tokenizer.hasMoreTokens()) {
+							newSet.add(tokenizer.nextToken())
+						}
+						zip.closeEntry()
+					}
+				}
+				phraseSet = newSet
+			} catch (e: Exception) {
+				System.err.println("Load words list failed: $e")
+			}
+		}
+	}
+
+	fun isChinesePhrase(s: String?): Boolean {
+		if (phraseSet == null) {
+			return false
+		}
+		if (s == null) {
+			return false
+		}
+		return try {
+			 phraseSet!!.contains(s)
+		} catch(e: Throwable) {
+			false
+		}
 	}
 
 }
