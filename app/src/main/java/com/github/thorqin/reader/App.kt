@@ -11,11 +11,9 @@ import com.github.thorqin.reader.utils.Skip
 import com.github.thorqin.reader.utils.hexString
 import com.github.thorqin.reader.utils.makeListType
 import org.apache.commons.io.FileUtils
-import java.io.File
-import java.io.IOException
-import java.io.InputStream
-import java.io.PushbackInputStream
+import java.io.*
 import java.lang.Exception
+import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.util.*
@@ -407,13 +405,21 @@ class App : Application() {
 	private fun initChinesePhrase() {
 		thread(start = true, isDaemon = true) {
 			try {
+				// val beginTime = System.currentTimeMillis()
 				val newSet = HashSet<String>(276900)
 				this.resources.openRawResource(R.raw.words).use {
 					ZipInputStream(it).use { zip ->
-						val buffer = ByteArray(1024 * 1024 * 3)
+						var out = ByteArrayOutputStream(4096)
+						val buffer = ByteArray(4096)
 						zip.nextEntry
-						val size = it.read(buffer)
-						val tokenizer = StringTokenizer(String(buffer, 0, size, Charset.forName("utf-8")), ",")
+						var size = zip.read(buffer)
+						while (size >= 0) {
+							out.write(buffer, 0, size)
+							size = zip.read(buffer)
+						}
+
+						val str = String(out.toByteArray(), Charset.forName("utf-8"))
+						val tokenizer = StringTokenizer(str, ",")
 						while (tokenizer.hasMoreTokens()) {
 							newSet.add(tokenizer.nextToken())
 						}
@@ -421,6 +427,7 @@ class App : Application() {
 					}
 				}
 				phraseSet = newSet
+				// println("\n\nload dict end, use time: ${System.currentTimeMillis() - beginTime}\n\n")
 			} catch (e: Exception) {
 				System.err.println("Load words list failed: $e")
 			}

@@ -16,9 +16,7 @@ import android.text.TextWatcher
 import android.text.method.ScrollingMovementMethod
 import android.view.*
 import android.view.View.*
-import android.widget.EditText
-import android.widget.SeekBar
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -248,12 +246,12 @@ class BookActivity : AppCompatActivity() {
 						else -> {
 							startX = event.rawX
 							startY = event.y
-							println("x: $startX, y: $startY")
+							// println("x: $startX, y: $startY")
 							hitTestRunable = Runnable {
 								hitTestRunable = null
 								val currentView = flipper.getChildAt(1) as BookView
 								val hitResult = currentView.hitTest(event.rawX, event.y)
-								if (hitResult != null) {
+								if (hitResult.isNotEmpty()) {
 									explain(hitResult)
 									startX = null
 									startY = null
@@ -1190,100 +1188,80 @@ class BookActivity : AppCompatActivity() {
 		var word: String? = null
 		var phonetic: String? = null
 		var definition: String? = null
-		var translation: String? = null
-		var exchange: String? = null
+//		var translation: String? = null
+//		var exchange: String? = null
 	}
 
-	private fun explain(txt: String) {
-		var cancelled = false
+	private fun createTranslationItem(item: Dict): View {
+		val translation_item = inflate(this, R.layout.translation_item, null)
+		val wordView = translation_item.findViewById<TextView>(R.id.translation_word)
+		val phoneticView = translation_item.findViewById<TextView>(R.id.translation_phonetic)
+		val definitionView = translation_item.findViewById<TextView>(R.id.translation_definition)
+		wordView.text = item.word
+		phoneticView.text = item.phonetic
+		definitionView.text = item.definition
+		return translation_item
+	}
+
+
+	private fun queryWordDefinition(txt: List<String>, success: (result: List<Dict>) -> Unit, error: (msg: String) -> Unit) {
+		var url = "http://138.91.1.176:8080/dict"
+		for ((i,s) in txt.withIndex()) {
+			url += if (i == 0) {
+				"?"
+			} else {
+				"&"
+			}
+			val word = URLEncoder.encode(s, "utf-8")
+			url += "q=$word"
+		}
 		val listType = makeListType(Dict::class.java)
-
-		val layout = inflate(this, R.layout.explain_dialog, null)
-		val title = layout.findViewById<TextView>(R.id.explain_title)
-		val phonetic = layout.findViewById<TextView>(R.id.explain_phonetic)
-		val phoneticLine = layout.findViewById<View>(R.id.phonetic_line)
-
-		title.compoundDrawablePadding = 20
-		title.text = txt
-		val desc = layout.findViewById<TextView>(R.id.explain_description)
-		desc.movementMethod = ScrollingMovementMethod()
-		desc.text = "查询中..."
-		val word = URLEncoder.encode(txt, "utf-8")
-		val request = AsyncHttpGet("http://138.91.1.176:8080/dict/translate?word=$word")
-
+		val request = AsyncHttpGet(url)
 		AsyncHttpClient.getDefaultInstance().executeString(request,
 			object:AsyncHttpClient.StringCallback() {
-    	override fun onCompleted(e: Exception?, response: AsyncHttpResponse?, result: String?) {
-        if (e != null) {
-          e.printStackTrace()
+				override fun onCompleted(e: Exception?, response: AsyncHttpResponse?, result: String?) {
+					if (e != null) {
+						runOnUiThread {
+							error(e.message ?: "网络错误!")
+						}
+						return
+					}
+					val list = json().fromJson(result, listType) as List<Dict>
 					runOnUiThread {
-						if (!cancelled) {
-							desc.text = "错误：" + e.message
-						}
+						success(list)
 					}
-					return
-        }
+				}
+			}
+		)
+	}
 
-				println("result: $result")
+	private fun explain(txt: List<String>) {
+		var cancelled = false
+		val translationLayout = inflate(this, R.layout.translation_dialog, null)
+		val scrollview = translationLayout.findViewById<ScrollView>(R.id.scrollview)
+		val container = translationLayout.findViewById<LinearLayout>(R.id.container)
+		val errorMsg = translationLayout.findViewById<TextView>(R.id.errorMsg)
+		val loading = translationLayout.findViewById<View>(R.id.loading)
 
-				val list = json().fromJson(result, listType) as List<Dict>
-				val p = java.lang.StringBuilder()
-				val d = java.lang.StringBuilder()
-				val t = java.lang.StringBuilder()
-				var hasPhonetic = false
-				var hasDefinition = false
-				var hasTranslation = false
-				for (dict in list) {
-					if (!dict.phonetic.isNullOrEmpty()) {
-						if (hasPhonetic) {
-							p.append(", ")
-						}
-						p.append(dict.phonetic)
-						hasPhonetic = true
-					}
-					if (!dict.definition.isNullOrEmpty()) {
-						if (hasDefinition) {
-							d.append("\n\n")
-						}
-						d.append(dict.definition)
-						hasDefinition = true
-					}
-					if (!dict.translation.isNullOrEmpty()) {
-						if (hasTranslation) {
-							t.append("\n\n")
-						}
-						t.append(dict.translation)
-						hasTranslation = true
-					}
+		queryWordDefinition(txt, success = { result ->
+			if (!cancelled) {
+				for (dict in result) {
+					val view = createTranslationItem(dict)
+					container.addView(view)
 				}
-				var descText = ""
-				if (hasDefinition) {
-					descText = "定义：\n$d"
-				}
-				if (hasTranslation) {
-					if (hasDefinition) {
-						descText += "\n\n"
-					}
-					descText += "翻译：\n$t"
-				}
-				runOnUiThread {
-					if (!cancelled) {
-						if (hasPhonetic) {
-							phonetic.text = "发音：$p"
-							phonetic.visibility = VISIBLE
-							phoneticLine.visibility = VISIBLE
-						} else {
-							phonetic.visibility = GONE
-							phoneticLine.visibility = GONE
-						}
-						desc.text = descText
-					}
-				}
-    	}
+				loading.visibility = GONE
+				scrollview.visibility = VISIBLE
+			}
+		}, error =  { msg ->
+			if (cancelled) {
+				errorMsg.text = msg
+				loading.visibility = GONE
+				errorMsg.visibility = VISIBLE
+			}
 		})
 
 		val dialog = AlertDialog.Builder(this, R.style.dialogStyle)
-			.setView(layout)
+			.setView(translationLayout)
 			.setCancelable(true)
 			.create()
 		dialog.setOnCancelListener {
@@ -1291,4 +1269,102 @@ class BookActivity : AppCompatActivity() {
 		}
 		dialog.show()
 	}
+
+//	private fun explain(txt: String) {
+//		var cancelled = false
+//		val listType = makeListType(Dict::class.java)
+//
+//		val layout = inflate(this, R.layout.explain_dialog, null)
+//		val title = layout.findViewById<TextView>(R.id.explain_title)
+//		val phonetic = layout.findViewById<TextView>(R.id.explain_phonetic)
+//		val phoneticLine = layout.findViewById<View>(R.id.phonetic_line)
+//
+//		title.compoundDrawablePadding = 20
+//		title.text = txt
+//		val desc = layout.findViewById<TextView>(R.id.explain_description)
+//		desc.movementMethod = ScrollingMovementMethod()
+//		desc.text = "查询中..."
+//		val word = URLEncoder.encode(txt, "utf-8")
+//		val request = AsyncHttpGet("http://138.91.1.176:8080/dict/translate?word=$word")
+//
+//		AsyncHttpClient.getDefaultInstance().executeString(request,
+//			object:AsyncHttpClient.StringCallback() {
+//    	override fun onCompleted(e: Exception?, response: AsyncHttpResponse?, result: String?) {
+//        if (e != null) {
+//          e.printStackTrace()
+//					runOnUiThread {
+//						if (!cancelled) {
+//							desc.text = "错误：" + e.message
+//						}
+//					}
+//					return
+//        }
+//
+//				println("result: $result")
+//
+//				val list = json().fromJson(result, listType) as List<Dict>
+//				val p = java.lang.StringBuilder()
+//				val d = java.lang.StringBuilder()
+//				val t = java.lang.StringBuilder()
+//				var hasPhonetic = false
+//				var hasDefinition = false
+//				var hasTranslation = false
+//				for (dict in list) {
+//					if (!dict.phonetic.isNullOrEmpty()) {
+//						if (hasPhonetic) {
+//							p.append(", ")
+//						}
+//						p.append(dict.phonetic)
+//						hasPhonetic = true
+//					}
+//					if (!dict.definition.isNullOrEmpty()) {
+//						if (hasDefinition) {
+//							d.append("\n\n")
+//						}
+//						d.append(dict.definition)
+//						hasDefinition = true
+//					}
+//					if (!dict.translation.isNullOrEmpty()) {
+//						if (hasTranslation) {
+//							t.append("\n\n")
+//						}
+//						t.append(dict.translation)
+//						hasTranslation = true
+//					}
+//				}
+//				var descText = ""
+//				if (hasDefinition) {
+//					descText = "定义：\n$d"
+//				}
+//				if (hasTranslation) {
+//					if (hasDefinition) {
+//						descText += "\n\n"
+//					}
+//					descText += "翻译：\n$t"
+//				}
+//				runOnUiThread {
+//					if (!cancelled) {
+//						if (hasPhonetic) {
+//							phonetic.text = "发音：$p"
+//							phonetic.visibility = VISIBLE
+//							phoneticLine.visibility = VISIBLE
+//						} else {
+//							phonetic.visibility = GONE
+//							phoneticLine.visibility = GONE
+//						}
+//						desc.text = descText
+//					}
+//				}
+//    	}
+//		})
+//
+//		val dialog = AlertDialog.Builder(this, R.style.dialogStyle)
+//			.setView(layout)
+//			.setCancelable(true)
+//			.create()
+//		dialog.setOnCancelListener {
+//			cancelled = true
+//		}
+//		dialog.show()
+//	}
 }

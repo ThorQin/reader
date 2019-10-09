@@ -79,7 +79,7 @@ class BookView : View {
 		return c in 'a'..'z' || c in 'A'..'Z'
 	}
 
-	private fun chooseText(txt: String, pos: Int): String? {
+	private fun chooseText(txt: String, pos: Int, result: MutableList<String>) {
 		val c = txt[pos]
 		val ub = Character.UnicodeBlock.of(c)
 		if (c in 'a'..'z' || c in 'A'..'Z') {
@@ -99,24 +99,38 @@ class BookView : View {
 					break
 				}
 			}
-			return txt.substring(start, end)
+			result.add(txt.substring(start, end))
 		} else if (ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS ||
 			ub == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS ||
 			ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A) {
-			return c.toString()
-		} else {
-			return null
+			result.add(c.toString())
+			val app = context.applicationContext as App
+			for (i in 2..4) {
+				for (j in 1..i) {
+					val start = pos - j + 1
+					if (start >= 0 && start + i < txt.length) {
+						val s = txt.substring(start, start + i)
+						// println(s)
+						if (app.isChinesePhrase(s)) {
+							result.add(s)
+						}
+					}
+				}
+			}
+			result.sortWith(Comparator { p0, p1 ->
+				p1.length - p0.length
+			})
 		}
 	}
 
-	fun hitTest(x: Float, y: Float): String? {
+	fun hitTest(x: Float, y: Float): List<String> {
 		val caption = if (chapterName.isEmpty()) this.bookName else chapterName
 		var hitTheTarget = false
-		var result: String? = null
+		var result = arrayListOf<String>()
 		if (pageIndex == 0) {
 			drawTitle(null, caption, HitTest(x, y) {
 				hitTheTarget = true
-				result = chooseText(caption, it)
+				chooseText(caption, it, result)
 			})
 			if (hitTheTarget) {
 				return result
@@ -124,7 +138,7 @@ class BookView : View {
 		}
 		drawContent(null, HitTest(x, y) {
 			hitTheTarget = true
-			result = chooseText(text, it)
+			chooseText(text, it, result)
 		})
 		return result
 	}

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:gravity="center"
+	android:orientation="vertical">
+
+	<com.github.thorqin.reader.component.HalfHeightScrollView
+		android:visibility="gone"
+		android:id="@+id/scrollview"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical">
+
+		<LinearLayout
+			android:id="@+id/container"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical" />
+	</com.github.thorqin.reader.component.HalfHeightScrollView>
+
+	<ProgressBar
+		android:id="@+id/loading"
+		android:visibility="visible"
+		style="@android:style/Widget.Material.ProgressBar.Small"
+		android:padding="40dp"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content" />
+
+	<TextView
+		android:visibility="gone"
+		android:id="@+id/errorMsg"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textSize="18dp"
+		android:textAlignment="center"
+		android:padding="20dp"
+		android:textColor="@color/colorWhite"
+		android:ellipsize="end"
+		android:maxLines="4"/>
+
+</LinearLayout>
