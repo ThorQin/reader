@@ -45,10 +45,14 @@ class UploadActivity : AppCompatActivity() {
 
 	}
 
-	override fun onStop() {
-		super.onStop()
+	override fun onDestroy() {
+		super.onDestroy()
 		stopWebServer()
-		this.unregisterReceiver(wifiStateReceiver)
+		try {
+			this.unregisterReceiver(wifiStateReceiver)
+		} catch (e: Throwable) {
+			System.err.println(e)
+		}
 	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {

@@ -8,7 +8,7 @@
 	<string name="no_book">没有图书 点击搜索</string>
 	<string name="no_storage_permission">存储权限不可用</string>
 	<string name="open_now">立即开启</string>
-	<string name="search_book">搜索图书</string>
+	<string name="search_book">搜索本地图书</string>
 	<string name="should_allow_permission">请在-应用设置-权限-中，允许读取存储权限来查找和打开图书</string>
 	<string name="topic">章节</string>
 	<string name="font_zoom_in">放大</string>
@@ -40,10 +40,14 @@
 	<string name="cancel">取消</string>
 	<string name="topic_rule">分章规则</string>
 	<string name="reset">重置</string>
-	<string name="upload_book">上传图书</string>
+	<string name="upload_book">WIFI 传书</string>
 	<string name="about">关于</string>
 	<string name="about_me">\n版本：%1$s\n作者：秦诺 \n邮箱：thor.qin@qq.com\n</string>
 	<string name="confirm_to_clear">清空书架会同时清除掉所有阅读进度，确认吗？</string>
 	<string name="need_wifi">请连接到局域网WIFI，以上传图书！</string>
 	<string name="use_browser">请用电脑浏览器访问：\nhttp://%1$s:%2$d</string>
+	<string name="interchange">图书交流</string>
+	<string name="check_update">检查更新</string>
+	<string name="upgrade">更新</string>
+	<string name="upToDate">您当前已经是最新版本！</string>
 </resources>

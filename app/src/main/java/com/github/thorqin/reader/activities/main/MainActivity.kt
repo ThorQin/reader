@@ -1,7 +1,11 @@
 package com.github.thorqin.reader.activities.main
 
 import android.Manifest
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.*
@@ -10,7 +14,12 @@ import androidx.appcompat.app.AppCompatActivity
 import android.view.Window
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.view.View.*
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.view.MenuCompat
@@ -18,14 +27,21 @@ import com.github.thorqin.reader.App
 import com.github.thorqin.reader.R
 import com.github.thorqin.reader.activities.book.BookActivity
 import com.github.thorqin.reader.activities.wifi.UploadActivity
+import com.github.thorqin.reader.utils.json
+import com.koushikdutta.async.ByteBufferList
+import com.koushikdutta.async.http.AsyncHttpClient
+import com.koushikdutta.async.http.AsyncHttpGet
+import com.koushikdutta.async.http.AsyncHttpResponse
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.lang.Exception
+import java.nio.charset.Charset
 import java.util.*
 import kotlin.collections.ArrayList
 import java.text.Collator
 import java.util.regex.Pattern
-
+import kotlin.concurrent.timer
 
 
 const val REQUEST_OPEN_SETTING = 1
@@ -47,6 +63,18 @@ class MainActivity : AppCompatActivity() {
 	private var searching = false
 	private var scanFile: String = ""
 	private lateinit var bookAdapter: BookListAdapter
+
+
+	private val downloadManagerReceiver = object: BroadcastReceiver() {
+		override fun onReceive(context: Context?, intent: Intent?) {
+			if (intent?.action.equals(DownloadManager.ACTION_DOWNLOAD_COMPLETE)) {
+				val downId = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+
+				//downId
+			}
+		}
+	}
+
 
 	private fun setScanFile(f: String) {
 		synchronized(scanFile) {
@@ -87,7 +115,13 @@ class MainActivity : AppCompatActivity() {
 		fileList.adapter = bookAdapter
 
 
+		registerReceiver(downloadManagerReceiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE ))
 		showFiles()
+	}
+
+	override fun onDestroy() {
+		super.onDestroy()
+		unregisterReceiver(downloadManagerReceiver)
 	}
 
 	override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -113,6 +147,10 @@ class MainActivity : AppCompatActivity() {
 			}
 			R.id.about -> {
 				showAbout()
+				true
+			}
+			R.id.check_update -> {
+				checkUpdate()
 				true
 			}
 			else -> super.onOptionsItemSelected(item)
@@ -335,5 +373,124 @@ class MainActivity : AppCompatActivity() {
 				app.clearBook()
 				showFiles()
 		}.setCancelable(true).show()
+	}
+
+
+	class ApkVersion (
+		val code: Int,
+		val version: String,
+		val description: String,
+		val download: String
+	)
+
+	private fun queryVersion(success: (result: ApkVersion) -> Unit, error: (msg: String) -> Unit) {
+		var url = "http://thor.qin.gitee.io/ereader-web/version.json"
+		val request = AsyncHttpGet(url)
+		AsyncHttpClient.getDefaultInstance().executeByteBufferList(request,
+			object: AsyncHttpClient.DownloadCallback() {
+				override fun onCompleted(
+					e: Exception?,
+					source: AsyncHttpResponse?,
+					result: ByteBufferList?
+				) {
+					if (e != null) {
+						runOnUiThread {
+							error(e.message ?: "网络错误!")
+						}
+						return
+					}
+					if (result == null) {
+						runOnUiThread {
+							error("网络错误!")
+						}
+						return
+					}
+					val bytes = result.allByteArray
+					val appVersion = json().fromJson(String(bytes, Charset.forName("utf-8")), ApkVersion::class.java) as ApkVersion
+					runOnUiThread {
+						success(appVersion)
+					}
+				}
+			}
+		)
+	}
+
+	private fun download(url: String, version: String, callback: (downloadId: Long?) -> Unit) {
+		val p = Environment.getExternalStorageDirectory().resolve("Download")
+		if (p.isDirectory) {
+			val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+			val request = DownloadManager.Request(Uri.parse(url))
+			request.setDestinationInExternalPublicDir("Download", "MeiLiShuo.apk");
+			request.setTitle("轻阅读");
+			request.setDescription("轻阅读：$version")
+			request.setMimeType("application/vnd.android.package-archive")
+			request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+//			request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
+			request.setVisibleInDownloadsUi(true)
+			val downloadId = downloadManager.enqueue(request)
+			callback(downloadId)
+		} else {
+			callback(null)
+		}
+	}
+
+	private fun checkUpdate() {
+		var cancelled = false
+		var tm: Timer? = null
+		val updateLayout = inflate(this, R.layout.check_update, null)
+		val upToDateView = updateLayout.findViewById<TextView>(R.id.up_to_date)
+		val downloadBox = updateLayout.findViewById<LinearLayout>(R.id.download_box)
+		val versionTitle = updateLayout.findViewById<TextView>(R.id.version_title)
+		val versionDesc = updateLayout.findViewById<TextView>(R.id.version_desc)
+		val loading = updateLayout.findViewById<ProgressBar>(R.id.loading)
+		val downloading = updateLayout.findViewById<ProgressBar>(R.id.downloading)
+		val upgradeButton = updateLayout.findViewById<Button>(R.id.upgrade_button)
+		val pkgInfo = packageManager.getPackageInfo(packageName, 0)
+		val dialog = AlertDialog.Builder(this, R.style.dialogStyle)
+			.setView(updateLayout)
+			.setCancelable(true)
+			.create()
+		queryVersion( success = { appVersion ->
+			if (!cancelled) {
+				if (appVersion.code > pkgInfo.versionCode) {
+					downloadBox.visibility = VISIBLE
+					versionTitle.text = "发现新版本：${appVersion.version}"
+					versionDesc.text = appVersion.description
+					upgradeButton.setOnClickListener {
+						download(appVersion.download, appVersion.version) {downloadId ->
+							if (downloadId == null) {
+								app.toast("下载失败！")
+								dialog.cancel()
+							} else {
+								val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+								downloading.visibility = VISIBLE
+								downloadBox.visibility = GONE
+								tm = timer("download", true, 1000, 1000) {
+									val query = DownloadManager.Query()
+									query.setFilterById(downloadId)
+									val cursor = downloadManager.query(query)
+									downloading.progress = cursor.position
+								}
+							}
+						}
+					}
+				} else {
+					upToDateView.visibility = VISIBLE
+				}
+				loading.visibility = GONE
+			}
+		}, error =  { msg ->
+			if (cancelled) {
+				upToDateView.visibility = VISIBLE
+				loading.visibility = GONE
+			}
+		})
+
+
+		dialog.setOnCancelListener {
+			cancelled = true
+			tm?.cancel()
+		}
+		dialog.show()
 	}
 }

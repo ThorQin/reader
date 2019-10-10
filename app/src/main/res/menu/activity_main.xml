@@ -3,25 +3,40 @@
 	xmlns:app="http://schemas.android.com/apk/res-auto">
 
 	<group android:id="@+id/menu_group_1">
-	<item
-		android:id="@+id/search_book"
-		android:enabled="true"
-		android:title="@string/search_book"
-		app:showAsAction="withText" />
+		<item
+			android:id="@+id/search_book"
+			android:enabled="true"
+			android:title="@string/search_book"
+			app:showAsAction="withText" />
 
-	<item
-		android:id="@+id/wifi_upload"
-		android:enabled="true"
-		android:title="@string/upload_book"
-		app:showAsAction="withText" />
+		<item
+			android:id="@+id/wifi_upload"
+			android:enabled="true"
+			android:title="@string/upload_book"
+			app:showAsAction="withText" />
 
-	<item
-		android:id="@+id/empty_book"
-		android:enabled="true"
-		android:title="@string/clear_book"
-		app:showAsAction="withText" />
+		<item
+			android:id="@+id/interchange"
+			android:enabled="true"
+			android:title="@string/interchange"
+			app:showAsAction="withText" />
+
+		<item
+			android:id="@+id/empty_book"
+			android:enabled="true"
+			android:title="@string/clear_book"
+			app:showAsAction="withText" />
 	</group>
+
 	<group android:id="@+id/menu_group_2">
+		<item
+			android:id="@+id/check_update"
+			android:enabled="true"
+			android:title="@string/check_update"
+			app:showAsAction="withText" />
+	</group>
+
+	<group android:id="@+id/menu_group_3">
 		<item
 			android:id="@+id/about"
 			android:enabled="true"

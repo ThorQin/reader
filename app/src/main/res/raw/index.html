@@ -27,6 +27,7 @@
 		}
 
 		.drag-box {
+			position: relative;
 			border-radius: 5px;
 			border: 2px dashed #888;
 			width: 100%;
@@ -37,6 +38,19 @@
 			user-select: none;
 			color: #888;
 		}
+		.drag-box.error {
+			color: #cc5555;
+		}
+		.drag-box .file-input {
+			display: block;
+			position: absolute;
+			left:0;
+			top:0;
+			width: 100%;
+			height: 100%;
+			opacity: 0;
+		}
+
 		.active {
 			background-color: #555;
 		}
@@ -59,13 +73,14 @@
 			background-color: #444;
 			font-size: 20px;
 		}
+
 	</style>
 </head>
 
 <body>
 	<h1 style="padding:20px 0">轻阅读 - 图书上传</h1>
 	<div id="uploadBox" class="drag-box">
-		拖拽文件到此处
+
 	</div>
 	<h1 style="padding:20px 0">图书列表</h1>
 	<div id="bookListDiv" class="book-list">
@@ -178,11 +193,30 @@
 		}
 
 		function reset() {
-			box.innerHTML = "拖拽文件到此处"
-			box.style.color = "#888"
+			let input = document.createElement("input")
+			input.type = "file"
+			input.className = "file-input"
+			input.setAttribute("title", " ");
+			input.setAttribute('multiple', 'multiple');
+			input.setAttribute('accept', "text/plain, application/epub+zip");
+			input.onchange = function() {
+				if (input.files.length > 0) {
+					box.className = "drag-box"
+					var fileList = input.files
+					if (!checkFiles(fileList)) {
+						error("存在不支持的文件类型！")
+						return
+					}
+					upload("/upload", fileList)
+				}
+			};
+			box.className = "drag-box"
+			box.innerHTML = "点击或拖拽文件到此处"
+			box.appendChild(input)
 		}
 		var timer = null
 		function error(msg) {
+			box.className = "drag-box error"
 			box.innerHTML = "错误：" + msg
 				timer = setTimeout(function() {
 					reset()
@@ -232,6 +266,7 @@
 		} else {
 			box.innerHTML = "不支持IE浏览器!"
 		}
+		reset();
 	</script>
 </body>
 
