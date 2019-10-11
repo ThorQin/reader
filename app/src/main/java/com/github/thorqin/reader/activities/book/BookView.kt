@@ -31,7 +31,10 @@ class BookView : View {
 	private lateinit var paint: Paint
 	private lateinit var descPaint: Paint
 	private lateinit var titlePaint: Paint
+
+	/**** DEBUG ****/
 //	private lateinit var debugPaint: Paint
+//	private var touchPoint: PointF? = null
 
 	private var cw = 0f
 	private var lh = 0
@@ -39,8 +42,11 @@ class BookView : View {
 	private var paintHeight = 0f
 	private var paintLeft = 0f
 	private var paintTop = 0f
+	private var footBarTop = 0f
 	private var startY = 0
 	private var pxPerDp = 0
+
+
 
 	var textSize = 24
 		set(value) {
@@ -124,9 +130,14 @@ class BookView : View {
 	}
 
 	fun hitTest(x: Float, y: Float): List<String> {
+		/**** DEBUG ****/
+//		touchPoint = PointF(x, y)
+//		this.invalidate()
+
+		var result = arrayListOf<String>()
+
 		val caption = if (chapterName.isEmpty()) this.bookName else chapterName
 		var hitTheTarget = false
-		var result = arrayListOf<String>()
 		if (pageIndex == 0) {
 			drawTitle(null, caption, HitTest(x, y) {
 				hitTheTarget = true
@@ -162,6 +173,7 @@ class BookView : View {
 		titlePaint.color = Color.parseColor(textColor)
 		titlePaint.isAntiAlias = true
 
+		/**DEBUG**/
 //		debugPaint = Paint()
 //		debugPaint.style = Paint.Style.STROKE
 //		debugPaint.color = Color.parseColor(textColor)
@@ -186,8 +198,10 @@ class BookView : View {
 		cw = ceil(paint.measureText(" "))
 		paintWidth = (width - paddingLeft - paddingRight).toFloat()
 		paintHeight = height - paddingTop - paddingBottom - barHeight * 2f
-		paintLeft = paddingLeft + (paintWidth % cw) / 2
-		paintTop = paddingTop + barHeight + (paintHeight % lh)
+		paintLeft = (width - (paintWidth - (paintWidth % cw) - cw)) / 2f
+		paintTop = paddingTop + barHeight + (paintHeight % lh) / 2f // DEBUG
+
+		footBarTop = (height - paddingBottom - barHeight).toFloat()
 
 		paint.getTextBounds("a中", 0, 2, _rect)
 		startY = -_rect.top
@@ -205,15 +219,22 @@ class BookView : View {
 		val caption = if (chapterName.isEmpty()) this.bookName else chapterName
 		val title = if (pageIndex == 0) this.bookName else caption
 		canvas.drawText(title , paintLeft, startY.toFloat() + 2 * pxPerDp, descPaint)
-		canvas.drawText(this.pageNo, paintLeft + pxPerDp * 20, paintTop + paintHeight + startY.toFloat() - 5 * pxPerDp, descPaint)
+		canvas.drawText(this.pageNo, paintLeft + pxPerDp * 20, footBarTop + startY.toFloat(), descPaint)
 
 		val descWidth = descPaint.measureText(this.progressInfo)
-		canvas.drawText(this.progressInfo, paintWidth - descWidth - pxPerDp * 20, paintTop + paintHeight + startY.toFloat() - 5 * pxPerDp, descPaint)
+		canvas.drawText(this.progressInfo, paintWidth - descWidth - pxPerDp * 20, footBarTop + startY.toFloat(), descPaint)
 
 		if (pageIndex == 0) {
 			drawTitle(canvas, caption, null)
 		}
 		drawContent(canvas, null)
+
+
+		/**DEBUG**/
+//		canvas?.drawRect(paintLeft, paintTop, paintLeft + paintWidth, paintTop + paintHeight, debugPaint)
+//		if (touchPoint != null) {
+//			canvas.drawCircle(touchPoint!!.x, touchPoint!!.y, lh / 2f, debugPaint)
+//		}
 	}
 
 	private val zero = 0.toChar()
@@ -248,6 +269,7 @@ class BookView : View {
 					hitTest.onHit(i)
 				}
 			} else {
+				/**DEBUG**/
 //				canvas?.drawRect(paintLeft + lw, t, paintLeft + lw + w, t + lh, debugPaint)
 				canvas?.drawText(c.toString(), paintLeft + lw, t -_titleRect.top, titlePaint)
 			}
@@ -305,6 +327,7 @@ class BookView : View {
 					return
 				}
 			} else {
+				/**DEBUG**/
 //				canvas?.drawRect(paintLeft + lw, paintTop + l * lh, paintLeft + lw + w, paintTop + (l + 1) * lh, debugPaint)
 				canvas?.drawText(c.toString(), paintLeft + lw, paintTop + startY + l * lh, paint)
 			}

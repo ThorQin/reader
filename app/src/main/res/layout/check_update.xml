@@ -14,13 +14,27 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content" />
 
-	<ProgressBar
-		android:id="@+id/downloading"
+	<LinearLayout
+		android:id="@+id/downloading_box"
 		android:visibility="gone"
-		style="@android:style/Widget.Material.ProgressBar.Horizontal"
-		android:padding="40dp"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content" />
+		android:layout_height="wrap_content"
+		android:orientation="vertical">
+		<TextView
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:text="@string/downloading"
+			android:textColor="@color/colorWhite"
+			android:textSize="20dp"
+			/>
+		<ProgressBar
+			android:id="@+id/downloading"
+
+			style="@android:style/Widget.Material.ProgressBar.Horizontal"
+			android:paddingVertical="20dp"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content" />
+	</LinearLayout>
 
 	<LinearLayout
 		android:visibility="gone"
@@ -61,14 +75,13 @@
 
 	<TextView
 		android:visibility="gone"
-		android:id="@+id/up_to_date"
+		android:id="@+id/message"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:textColor="@color/colorWhite"
 		android:textSize="20dp"
 		android:textAlignment="center"
 		android:padding="20dp"
-		android:text="@string/upToDate"
 		tools:ignore="SpUsage" />
 
 </LinearLayout>

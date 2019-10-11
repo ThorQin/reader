@@ -246,19 +246,24 @@ class BookActivity : AppCompatActivity() {
 						else -> {
 							startX = event.rawX
 							startY = event.y
-							// println("x: $startX, y: $startY")
+
+							/**DEBUG**/
+							// println("rawY: ${event.rawY}, y: $startY")
+
 							hitTestRunable = Runnable {
 								hitTestRunable = null
-								val currentView = flipper.getChildAt(1) as BookView
-								val hitResult = currentView.hitTest(event.rawX, event.y)
-								if (hitResult.isNotEmpty()) {
-									explain(hitResult)
-									startX = null
-									startY = null
-									viewX = null
+								if (startX != null && startY != null) {
+									val currentView = flipper.getChildAt(1) as BookView
+									val hitResult = currentView.hitTest(startX!!, startY!!)
+									if (hitResult.isNotEmpty()) {
+										startX = null
+										startY = null
+										viewX = null
+										explain(hitResult)
+									}
 								}
 							}
-							handler.postDelayed(hitTestRunable,400)
+							handler.postDelayed(hitTestRunable,300)
 							surface == null
 						}
 					}
