@@ -43,9 +43,10 @@ import java.util.regex.Pattern
 import kotlin.concurrent.timer
 
 
-const val REQUEST_OPEN_SETTING = 1
+const val REQUEST_SEARCH_BOOK = 1
 const val REQUEST_OPEN_BOOK = 2
 const val REQUEST_OPEN_UPLOAD = 3
+const val REQUEST_CHECK_UPDATE = 4
 
 class MyFileProvider : FileProvider()
 
@@ -97,7 +98,6 @@ class MainActivity : AppCompatActivity() {
 						println("COLUMN_LOCAL_URI: $path")
 						println("getUriForDownloadedFile Uri: $contentUri")
 						if (status == DownloadManager.STATUS_SUCCESSFUL) {
-							downloadManager.openDownloadedFile(downId)
 							val installIntent = Intent(Intent.ACTION_VIEW)
 							when {
 								Build.VERSION.SDK_INT < Build.VERSION_CODES.N -> installIntent.setDataAndType(
@@ -118,7 +118,6 @@ class MainActivity : AppCompatActivity() {
 								}
 							}
 							installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-							downloadManager.remove(downId)
 							this@MainActivity.startActivity(installIntent)
 						}
 					}
@@ -324,7 +323,7 @@ class MainActivity : AppCompatActivity() {
 						Manifest.permission.WRITE_EXTERNAL_STORAGE,
 						Manifest.permission.READ_EXTERNAL_STORAGE
 					),
-					REQUEST_OPEN_SETTING
+					REQUEST_SEARCH_BOOK
 				)
 			} else {
 				searchBooksInternal()
@@ -371,14 +370,16 @@ class MainActivity : AppCompatActivity() {
 	) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			if (requestCode == 1) {
-				if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-					val b = shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-					if (!b) {
-						showOpenAppSetting()
-					}
-				} else {
+			if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+				val b = shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+				if (!b) {
+					showOpenAppSetting()
+				}
+			} else {
+				if (requestCode == REQUEST_SEARCH_BOOK) {
 					searchBooksInternal()
+				} else if (requestCode == REQUEST_CHECK_UPDATE) {
+					checkUpdateInternal()
 				}
 			}
 		}
@@ -398,13 +399,13 @@ class MainActivity : AppCompatActivity() {
 		intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 		val uri = Uri.fromParts("package", packageName, null)
 		intent.data = uri
-		startActivityForResult(intent, 1)
+		startActivityForResult(intent, REQUEST_SEARCH_BOOK)
 	}
 
 	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 		super.onActivityResult(requestCode, resultCode, data)
 		when (requestCode) {
-			REQUEST_OPEN_SETTING -> // SETTING MAYBE CHANGED
+			REQUEST_SEARCH_BOOK -> // SETTING MAYBE CHANGED
 				searchBooks()
 			REQUEST_OPEN_BOOK -> { // BOOK ACTIVITY CLOSED
 				showFiles()
@@ -412,6 +413,7 @@ class MainActivity : AppCompatActivity() {
 				app.saveConfig()
 			}
 			REQUEST_OPEN_UPLOAD -> showFiles()
+			REQUEST_CHECK_UPDATE -> checkUpdate()
 		}
 	}
 
@@ -531,6 +533,26 @@ class MainActivity : AppCompatActivity() {
 	}
 
 	private fun checkUpdate() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			val i = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+			if (i != PackageManager.PERMISSION_GRANTED) {
+				ActivityCompat.requestPermissions(
+					this,
+					arrayOf(
+						Manifest.permission.WRITE_EXTERNAL_STORAGE,
+						Manifest.permission.READ_EXTERNAL_STORAGE
+					),
+					REQUEST_CHECK_UPDATE
+				)
+			} else {
+				checkUpdateInternal()
+			}
+		} else {
+			checkUpdateInternal()
+		}
+	}
+
+	private fun checkUpdateInternal() {
 		var cancelled = false
 		var tm: Timer? = null
 		val updateLayout = inflate(this, R.layout.check_update, null)

@@ -6,11 +6,7 @@ import android.view.View
 import com.github.thorqin.reader.App
 import kotlin.math.floor
 import android.graphics.*
-import android.view.MotionEvent
 import kotlin.math.ceil
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-
-
 
 
 class BookView : View {
@@ -38,13 +34,21 @@ class BookView : View {
 
 	private var cw = 0f
 	private var lh = 0
+	private var titleLh = 0
+	private var titleCw: Float = 0f
 	private var paintWidth = 0f
 	private var paintHeight = 0f
 	private var paintLeft = 0f
 	private var paintTop = 0f
 	private var footBarTop = 0f
-	private var startY = 0
+	private var headBarTop = 0f
+	private var textOffsetY = 0f
+	private var textOffsetX = 0f
+	private var textOffset2X = 0f
+	private var titleOffsetY = 0f
+	private var descOffsetY = 0f
 	private var pxPerDp = 0
+	private var barHeight: Int = 0
 
 
 
@@ -134,7 +138,7 @@ class BookView : View {
 //		touchPoint = PointF(x, y)
 //		this.invalidate()
 
-		var result = arrayListOf<String>()
+		val result = arrayListOf<String>()
 
 		val caption = if (chapterName.isEmpty()) this.bookName else chapterName
 		var hitTheTarget = false
@@ -155,17 +159,38 @@ class BookView : View {
 	}
 
 	private fun createPaint() {
+
+		pxPerDp = App.dip2px(context, 1f)
+		barHeight = pxPerDp * 24
+
+		lh = App.dip2px(context, (1.5f * textSize))
+
+		val rect = Rect()
 		descPaint = Paint()
 		descPaint.typeface = Typeface.MONOSPACE
 		descPaint.textSize = App.dip2px(context, 14f).toFloat()
 		descPaint.color = Color.parseColor(descColor)
 		descPaint.isAntiAlias = true
+		descPaint.getTextBounds("a中", 0, 2, rect)
+		descOffsetY = -rect.top.toFloat()+ (barHeight - descPaint.textSize) / 2f
 
 		paint = Paint()
 		paint.typeface = Typeface.MONOSPACE
 		paint.textSize = App.dip2px(context, textSize.toFloat()).toFloat()
 		paint.color = Color.parseColor(textColor)
 		paint.isAntiAlias = true
+		cw = ceil(paint.measureText(" "))
+
+		paint.getTextBounds("a中", 0, 2, rect)
+		textOffsetY = -rect.top.toFloat() + (lh - textSize * pxPerDp) / 2f
+
+		var w = ceil(paint.measureText("a"))
+		paint.getTextBounds("a", 0, 1, rect)
+		textOffsetX = (w - (rect.right - rect.left)) / 2f
+
+		w = ceil(paint.measureText("中"))
+		paint.getTextBounds("中", 0, 1, rect)
+		textOffset2X = (w - (rect.right - rect.left)) / 2f
 
 		titlePaint = Paint()
 		titlePaint.typeface = Typeface.MONOSPACE
@@ -173,19 +198,20 @@ class BookView : View {
 		titlePaint.color = Color.parseColor(textColor)
 		titlePaint.isAntiAlias = true
 
+		titleCw = ceil(titlePaint.measureText(" "))
+		titlePaint.getTextBounds("a中", 0, 2, rect)
+		titleLh = rect.bottom - rect.top
+		titleOffsetY = -rect.top.toFloat()
+
 		/**DEBUG**/
 //		debugPaint = Paint()
 //		debugPaint.style = Paint.Style.STROKE
 //		debugPaint.color = Color.parseColor(textColor)
 //		debugPaint.strokeWidth = 1f
-
-		lh = App.dip2px(context, (textSize * 1.5).toFloat())
 	}
 
-	private val _rect = Rect()
-	private val _titleRect = Rect()
-	private var barHeight: Int = 0
-	private var titleCw: Float = 0f
+
+
 	override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
 		super.onLayout(changed, left, top, right, bottom)
 		if (changed) {
@@ -194,21 +220,27 @@ class BookView : View {
 	}
 
 	private fun initValues() {
-		barHeight = App.dip2px(context, 24f)
-		cw = ceil(paint.measureText(" "))
-		paintWidth = (width - paddingLeft - paddingRight).toFloat()
-		paintHeight = height - paddingTop - paddingBottom - barHeight * 2f
-		paintLeft = (width - (paintWidth - (paintWidth % cw) - cw)) / 2f
-		paintTop = paddingTop + barHeight + (paintHeight % lh) / 2f // DEBUG
 
+
+		paintWidth = (width - paddingLeft - paddingRight).toFloat()
+
+		val numberOfChars = floor(paintWidth / cw).toInt()
+		paintWidth = if (numberOfChars % 2 == 1) {
+			cw * (numberOfChars - 1)
+		} else {
+			cw * numberOfChars
+		}
+
+		paintHeight = height - paddingTop - paddingBottom - barHeight * 2f
+		val numberOfLines = floor(paintHeight / lh)
+		paintHeight = numberOfLines * lh
+
+		paintLeft = (width - paintWidth) / 2f
+		paintTop = (height - paintHeight) / 2f
+
+		headBarTop = paddingTop.toFloat()
 		footBarTop = (height - paddingBottom - barHeight).toFloat()
 
-		paint.getTextBounds("a中", 0, 2, _rect)
-		startY = -_rect.top
-		pxPerDp = App.dip2px(context, 1f)
-
-		titlePaint.getTextBounds("a中", 0, 2, _titleRect)
-		titleCw = ceil(titlePaint.measureText(" "))
 	}
 
 	override fun onDraw(canvas: Canvas?) {
@@ -218,11 +250,14 @@ class BookView : View {
 
 		val caption = if (chapterName.isEmpty()) this.bookName else chapterName
 		val title = if (pageIndex == 0) this.bookName else caption
-		canvas.drawText(title , paintLeft, startY.toFloat() + 2 * pxPerDp, descPaint)
-		canvas.drawText(this.pageNo, paintLeft + pxPerDp * 20, footBarTop + startY.toFloat(), descPaint)
+		// TOP BAR
+		canvas.drawText(title , paintLeft, headBarTop + descOffsetY, descPaint)
 
+
+		// FOOT BAR
+		canvas.drawText(this.pageNo, paintLeft + pxPerDp * 20, footBarTop + descOffsetY, descPaint)
 		val descWidth = descPaint.measureText(this.progressInfo)
-		canvas.drawText(this.progressInfo, paintWidth - descWidth - pxPerDp * 20, footBarTop + startY.toFloat(), descPaint)
+		canvas.drawText(this.progressInfo, paintWidth - descWidth - pxPerDp * 20, footBarTop + descOffsetY, descPaint)
 
 		if (pageIndex == 0) {
 			drawTitle(canvas, caption, null)
@@ -231,6 +266,8 @@ class BookView : View {
 
 
 		/**DEBUG**/
+//		canvas?.drawRect(paintLeft, 0f, paintLeft + paintWidth, barHeight.toFloat(), debugPaint)
+//		canvas?.drawRect(paintLeft, footBarTop, paintLeft + paintWidth, footBarTop + barHeight.toFloat(), debugPaint)
 //		canvas?.drawRect(paintLeft, paintTop, paintLeft + paintWidth, paintTop + paintHeight, debugPaint)
 //		if (touchPoint != null) {
 //			canvas.drawCircle(touchPoint!!.x, touchPoint!!.y, lh / 2f, debugPaint)
@@ -242,9 +279,9 @@ class BookView : View {
 	private class HitTest(val x: Float, val y: Float, val onHit: (pos: Int) -> Unit)
 
 	private fun drawTitle(canvas: Canvas?, title: String, hitTest: HitTest?) {
-		var t = paintTop
+		var t = paintTop + lh / 3f
 		val l = paintLeft
-		val lh = _titleRect.bottom - _titleRect.top
+		val lh = titleLh
 
 		var lw = 0f
 		var line = 1
@@ -271,7 +308,7 @@ class BookView : View {
 			} else {
 				/**DEBUG**/
 //				canvas?.drawRect(paintLeft + lw, t, paintLeft + lw + w, t + lh, debugPaint)
-				canvas?.drawText(c.toString(), paintLeft + lw, t -_titleRect.top, titlePaint)
+				canvas?.drawText(c.toString(), paintLeft + lw, t + titleOffsetY, titlePaint)
 			}
 			lw += w
 		}
@@ -307,10 +344,14 @@ class BookView : View {
 				}
 			}
 			begin = false
-			val w = if (c > zero && c < 256.toChar()) {
-				cw
+			var w: Float
+			var offsetX: Float
+			if (c > zero && c < 256.toChar()) {
+				w = cw
+				offsetX = textOffsetX
 			} else {
-				2 * cw
+				w = 2 * cw
+				offsetX = textOffset2X
 			}
 			if (lw + w > paintWidth) {
 				if (l < totalLines - 1) {
@@ -329,7 +370,7 @@ class BookView : View {
 			} else {
 				/**DEBUG**/
 //				canvas?.drawRect(paintLeft + lw, paintTop + l * lh, paintLeft + lw + w, paintTop + (l + 1) * lh, debugPaint)
-				canvas?.drawText(c.toString(), paintLeft + lw, paintTop + startY + l * lh, paint)
+				canvas?.drawText(c.toString(), paintLeft + lw + offsetX, paintTop + textOffsetY + l * lh, paint)
 			}
 			lw += w
 		}
