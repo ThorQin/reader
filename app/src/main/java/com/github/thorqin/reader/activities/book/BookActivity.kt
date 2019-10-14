@@ -58,6 +58,7 @@ class BookActivity : AppCompatActivity() {
 	private var showActionBar = false
 	private var showSceneBar = false
 	private var showFontSizeBar = false
+	private var ttsPlaying = false
 
 	private lateinit var handler: Handler
 
@@ -155,7 +156,7 @@ class BookActivity : AppCompatActivity() {
 			}
 		}
 
-		floatButton.setOnClickListener {
+		brightnessButton.setOnClickListener {
 			app.config.sunshineMode = sunshineMode.tag != R.drawable.radius_button_checked
 			applySceneMode()
 			app.saveConfig()
@@ -419,8 +420,43 @@ class BookActivity : AppCompatActivity() {
 			showContent(true)
 		}
 
+		ttsButton.setOnClickListener {
+			ttsPlaying = !ttsPlaying
+			val drawable = if (ttsPlaying) {
+				ContextCompat.getDrawable(this, R.drawable.ic_pause_white_24dp)
+			} else {
+				ContextCompat.getDrawable(this, R.drawable.ic_play_arrow_white_24dp)
+			}
+			ttsButton.setImageDrawable(drawable)
+			ttsButton.invalidateDrawable(drawable!!)
+			if (showActionBar) {
+				// toggleActionBar()
+			} else {
+				hidePlayButton()
+			}
+		}
+
 		openBook()
 		keepScreenOn()
+	}
+
+	private fun hidePlayButton() {
+		val anim = ValueAnimator()
+		anim.setFloatValues(1f, 0f)
+		anim.duration = 200
+		anim.addUpdateListener {
+			val value = anim.animatedValue as Float
+			ttsButton.alpha = value * 0.9f
+		}
+		anim.addListener(object : Animator.AnimatorListener {
+			override fun onAnimationRepeat(p0: Animator?) {}
+			override fun onAnimationEnd(p0: Animator?) {
+				ttsButton.visibility = GONE
+			}
+			override fun onAnimationCancel(p0: Animator?) {}
+			override fun onAnimationStart(p0: Animator?) {}
+		})
+		anim.start()
 	}
 
 	private fun prevPage() {
@@ -501,11 +537,11 @@ class BookActivity : AppCompatActivity() {
 		} else {
 			ContextCompat.getDrawable(this, R.drawable.ic_brightness_2_white_24dp)
 		}
-		floatButton.setImageDrawable(drawable)
+		brightnessButton.setImageDrawable(drawable)
 
-		if (floatButton.isShown) {
-			floatButton.hide()
-			floatButton.show()
+		if (brightnessButton.isShown) {
+			brightnessButton.hide()
+			brightnessButton.show()
 		}
 
 
@@ -603,7 +639,10 @@ class BookActivity : AppCompatActivity() {
 		if (!showActionBar) {
 			appBar.visibility = VISIBLE
 			footBar.visibility = VISIBLE
-			floatButton.show()
+			brightnessButton.show()
+			if (!ttsPlaying) {
+				ttsButton.visibility = VISIBLE
+			}
 			anim.setFloatValues(1f, 0f)
 		} else {
 			anim.setFloatValues(0f, 1f)
@@ -613,7 +652,10 @@ class BookActivity : AppCompatActivity() {
 			val value = anim.animatedValue as Float
 			footBar.translationY = footBar.height * value
 			appBar.translationY = -appBar.height * value
-			floatButton.alpha = 1 - value
+			brightnessButton.alpha = 1 - value
+			if (!ttsPlaying) {
+				ttsButton.alpha = (1 - value) * 0.9f
+			}
 		}
 		anim.addListener(object : Animator.AnimatorListener {
 			override fun onAnimationRepeat(p0: Animator?) {}
@@ -624,7 +666,10 @@ class BookActivity : AppCompatActivity() {
 					showActionBar = true
 					callback?.invoke()
 				} else {
-					floatButton.hide()
+					brightnessButton.hide()
+					if (!ttsPlaying) {
+						ttsButton.visibility = GONE
+					}
 					appBar.visibility = GONE
 					footBar.translationY = -appBar.height.toFloat()
 					footBar.visibility = GONE

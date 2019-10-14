@@ -81,17 +81,29 @@
 
 		<!-- Brightness Switch Button -->
 		<com.google.android.material.floatingactionbutton.FloatingActionButton
-			android:id="@+id/floatButton"
+			android:id="@+id/brightnessButton"
 			android:alpha="0"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			app:layout_anchor="@id/footBar"
 			android:layout_marginEnd="20dp"
-			android:clickable="true"
-			android:focusable="true"
-			android:translationY="-15dp"
+			android:layout_gravity="top"
+			android:translationY="15dp"
 			app:layout_anchorGravity="top|end"
 			android:src="@drawable/ic_brightness_2_white_24dp"
+			android:visibility="visible"
+			/>
+
+		<!-- TTS Button -->
+		<ImageView
+			android:id="@+id/ttsButton"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center"
+			android:src="@drawable/ic_play_arrow_white_24dp"
+			android:background="@drawable/play_button_bg"
+			android:padding="30dp"
+			android:alpha="0.9"
 			android:visibility="gone"
 			/>
 
