@@ -1,7 +1,6 @@
 package com.github.thorqin.reader
 
 
-import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Application
 import android.content.Context
@@ -13,10 +12,10 @@ import com.github.thorqin.reader.utils.makeListType
 import org.apache.commons.io.FileUtils
 import java.io.*
 import java.lang.Exception
-import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.util.*
+import java.util.regex.Pattern
 import java.util.zip.ZipInputStream
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -59,6 +58,7 @@ class App : Application() {
 		var readPage = 0
 		var readChapter = 0
 		var readPageOfChapter = 0
+		var ttsPoint = 0L
 		var screenWidth = 0
 		var screenHeight = 0
 		var topicRule: String? = null
@@ -177,25 +177,85 @@ class App : Application() {
 			}
 		}
 
-		fun next() {
-			if (readPageOfChapter < chapters[readChapter].pages.size - 1) {
+		fun syncTTSPoint() {
+			ttsPoint = if (chapters.size > 0) {
+				val chapter = chapters[readChapter]
+				val page = chapter.pages[readPageOfChapter]
+				page.start
+			} else {
+				0
+			}
+		}
+
+		class SentenceInfo(var sentence: String?, var changePage: Boolean)
+
+		fun readSentence(): SentenceInfo {
+			val result = SentenceInfo(null, false)
+			if (readChapter < chapters.size) {
+				val file = File(path)
+				file.inputStream().use {
+					it.reader(Charset.forName(encoding)).use { it1 ->
+						it1.skip(ttsPoint)
+						val buffer = CharArray(2048)
+						val size = it1.read(buffer)
+						if (size > 0) {
+							val str = String(buffer, 0, size)
+							val sentenceToken = Pattern.compile("[.;\"：；“”。\\n]", Pattern.MULTILINE)
+							val m = sentenceToken.matcher(str)
+							if (m.find()) {
+								result.sentence = str.substring(0, m.start() + 1)
+								ttsPoint += result.sentence!!.length
+							} else {
+								result.sentence = str
+								ttsPoint += size
+							}
+						} else {
+							return result
+						}
+					}
+				}
+				var chapter = chapters[readChapter]
+				var page = chapter.pages[readPageOfChapter]
+				while (ttsPoint > page.start + page.length) {
+					if (next()) {
+						result.changePage = true
+						chapter = chapters[readChapter]
+						page = chapter.pages[readPageOfChapter]
+					} else {
+						break
+					}
+				}
+			}
+			return result
+		}
+
+		fun next(): Boolean {
+			return if (readPageOfChapter < chapters[readChapter].pages.size - 1) {
 				readPageOfChapter++
 				readPage++
+				true
 			} else if (readChapter < chapters.size - 1) {
 				readChapter++
 				readPageOfChapter = 0
 				readPage++
+				true
+			} else {
+				false
 			}
 		}
 
-		fun previous() {
-			if (readPageOfChapter > 0) {
+		fun previous(): Boolean {
+			return if (readPageOfChapter > 0) {
 				readPageOfChapter--
 				readPage--
+				true
 			} else if (readChapter > 0) {
 				readChapter--
 				readPageOfChapter = chapters[readChapter].pages.size - 1
 				readPage--
+				true
+			} else {
+				false
 			}
 		}
 	}

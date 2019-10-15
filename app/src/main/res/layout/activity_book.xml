@@ -200,7 +200,7 @@
 					android:layout_width="0dp"
 					android:layout_height="match_parent"
 					android:layout_weight="1"
-					android:drawableTop="@drawable/ic_more_horiz_white_24dp"
+					android:drawableTop="@drawable/ic_tune_white_24dp"
 					android:text="@string/settings"
 					style="?android:attr/buttonBarButtonStyle"
 					android:theme="@style/BookSettingButton" />
