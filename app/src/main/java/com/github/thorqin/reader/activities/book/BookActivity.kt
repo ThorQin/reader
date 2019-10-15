@@ -438,12 +438,26 @@ class BookActivity : AppCompatActivity() {
 		})
 
 		prevTopic.setOnClickListener {
+			if (ttsPlaying) {
+				tts.stop()
+			}
 			fileInfo.prevTopic()
+			fileInfo.syncTTSPoint()
+			if (ttsPlaying) {
+				ttsPlay()
+			}
 			showContent(true)
 		}
 
 		nextTopic.setOnClickListener {
+			if (ttsPlaying) {
+				tts.stop()
+			}
 			fileInfo.nextTopic()
+			fileInfo.syncTTSPoint()
+			if (ttsPlaying) {
+				ttsPlay()
+			}
 			showContent(true)
 		}
 
@@ -508,7 +522,8 @@ class BookActivity : AppCompatActivity() {
 		while (true) {
 			val sentence = fileInfo.readSentence()
 			if (sentence.sentence != null) {
-				val str = sentence.sentence!!.replace(Regex("[\"“”]"), " ").trim()
+//				println(sentence.sentence)
+				val str = sentence.sentence!!.replace(Regex("[\\s\\n\"“”]+"), " ").trim()
 				if (str.isNotEmpty()) {
 					tts.speak(str, TextToSpeech.QUEUE_FLUSH, null, "e-reader-sentence")
 					showContent(true)
@@ -924,6 +939,9 @@ class BookActivity : AppCompatActivity() {
 
 	@SuppressLint("RtlHardcoded")
 	private fun onSelectTopic(chapterIndex: Int) {
+		if (ttsPlaying) {
+			tts.stop()
+		}
 		fileInfo.readChapter = chapterIndex
 		fileInfo.readPageOfChapter = 0
 		var p = 0
@@ -931,6 +949,9 @@ class BookActivity : AppCompatActivity() {
 			p += fileInfo.chapters[i].pages.size
 		}
 		fileInfo.readPage = p
+		if (ttsPlaying) {
+			ttsPlay()
+		}
 		showContent(true)
 		drawerBox.closeDrawer(Gravity.LEFT, true)
 	}
