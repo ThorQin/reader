@@ -483,17 +483,18 @@ class BookActivity : AppCompatActivity() {
 
 		tts.setOnUtteranceProgressListener(object: UtteranceProgressListener() {
 			override fun onDone(p0: String?) {
+//				println("done: $p0")
 				if (ttsPlaying && p0 == "e-reader-sentence") {
 					ttsPlay()
 				}
 			}
 
 			override fun onError(p0: String?) {
-				// println("error: $p0")
+//				println("error: $p0")
 			}
 
 			override fun onStart(p0: String?) {
-				// println("start: $p0")
+//				println("start: $p0")
 			}
 
 		})
@@ -504,11 +505,18 @@ class BookActivity : AppCompatActivity() {
 
 
 	private fun ttsPlay() {
-		val sentence = fileInfo.readSentence()
-		if (sentence.sentence != null) {
-			val str = sentence.sentence!!.trim().replace(Regex("[\"“”]"), " ")
-			tts.speak(str, TextToSpeech.QUEUE_FLUSH, null, "e-reader-sentence")
-			showContent(true)
+		while (true) {
+			val sentence = fileInfo.readSentence()
+			if (sentence.sentence != null) {
+				val str = sentence.sentence!!.replace(Regex("[\"“”]"), " ").trim()
+				if (str.isNotEmpty()) {
+					tts.speak(str, TextToSpeech.QUEUE_FLUSH, null, "e-reader-sentence")
+					showContent(true)
+					break
+				} else {
+					continue
+				}
+			}
 		}
 	}
 
