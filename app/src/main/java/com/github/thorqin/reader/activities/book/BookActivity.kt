@@ -8,14 +8,15 @@ import kotlinx.android.synthetic.main.activity_book.*
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import android.text.Editable
 import android.text.TextWatcher
-import android.text.method.ScrollingMovementMethod
 import android.view.*
 import android.view.View.*
 import android.widget.*
@@ -24,6 +25,7 @@ import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.activities.setting.SettingsActivity
+import com.github.thorqin.reader.services.TTSService
 import com.github.thorqin.reader.utils.EPub
 import com.github.thorqin.reader.utils.detectCharset
 import com.github.thorqin.reader.utils.json
@@ -52,6 +54,52 @@ class BookActivity : AppCompatActivity() {
 		RIGHT(1)
 	}
 
+	private lateinit var ttsService: TTSService
+	private val serviceConnection = object: ServiceConnection {
+		override fun onServiceDisconnected(p0: ComponentName?) {
+
+		}
+
+		override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
+			ttsService = (p1 as TTSService.TTSBinder).service
+			if (::fileInfo.isInitialized) {
+				ttsService.setFileInfo(fileInfo)
+			}
+			ttsService.setListener(object: TTSService.StateListener {
+				override fun onStart() {
+					if (!ttsPlaying) {
+						ttsPlaying = true
+						val drawable = ContextCompat.getDrawable(this@BookActivity, R.drawable.ic_pause_white_24dp)
+						ttsButton.setImageDrawable(drawable)
+						ttsButton.invalidateDrawable(drawable!!)
+						if (showActionBar) {
+							toggleActionBar()
+						}
+					}
+				}
+
+				override fun onStop() {
+					if (ttsPlaying) {
+						ttsPlaying = false
+						val drawable = ContextCompat.getDrawable(this@BookActivity, R.drawable.ic_play_arrow_white_24dp)
+						ttsButton.setImageDrawable(drawable)
+						ttsButton.invalidateDrawable(drawable!!)
+						if (!showActionBar) {
+							toggleActionBar()
+						}
+					}
+				}
+
+				override fun onUpdate() {
+					showContent(true)
+				}
+
+			})
+		}
+
+	}
+
+	private lateinit var handler: Handler
 	private lateinit var summary: App.FileSummary
 	private lateinit var fileInfo: App.FileDetail
 	private var boxWidth: Float = 0F
@@ -60,12 +108,7 @@ class BookActivity : AppCompatActivity() {
 	private var showActionBar = false
 	private var showSceneBar = false
 	private var showFontSizeBar = false
-
 	private var ttsPlaying = false
-	private lateinit var tts: TextToSpeech
-	private var ttsAvailable = false
-
-	private lateinit var handler: Handler
 
 	private val app: App
 		get() {
@@ -80,7 +123,7 @@ class BookActivity : AppCompatActivity() {
 
 	override fun onDestroy() {
 		try {
-			tts.shutdown()
+			unbindService(serviceConnection)
 		} catch (e: Throwable) {
 		}
 		super.onDestroy()
@@ -92,6 +135,9 @@ class BookActivity : AppCompatActivity() {
 		super.onCreate(savedInstanceState)
 
 		handler = Handler(Looper.getMainLooper())
+
+		val ttsIntent = Intent(this, TTSService::class.java)
+		bindService(ttsIntent, serviceConnection, Context.BIND_AUTO_CREATE)
 
 		val key = intent.getStringExtra("key")
 		if (key == null) {
@@ -333,9 +379,7 @@ class BookActivity : AppCompatActivity() {
 							Direction.RIGHT -> { // flip to previous page
 								if (event.rawX > startX!! + diff) {
 									val toPos = 0f
-									if (ttsPlaying) {
-										tts.stop()
-									}
+									ttsService.stop()
 									moveViewTo(surface!!, toPos) {
 										val bottomView = flipper.getChildAt(0)
 										flipper.removeViewAt(0)
@@ -346,7 +390,7 @@ class BookActivity : AppCompatActivity() {
 										fileInfo.previous()
 										fileInfo.syncTTSPoint()
 										if (ttsPlaying) {
-											ttsPlay()
+											ttsService.play()
 										}
 										handler.postDelayed({
 											showContent(false)
@@ -363,9 +407,7 @@ class BookActivity : AppCompatActivity() {
 							}
 							else -> { // flip to next page
 								if (event.rawX < startX!! - diff) {
-									if (ttsPlaying) {
-										tts.stop()
-									}
+									ttsService.stop()
 									moveViewTo(surface!!, -boxWidth) {
 										val topView = flipper.getChildAt(2)
 										flipper.removeViewAt(2)
@@ -376,7 +418,7 @@ class BookActivity : AppCompatActivity() {
 										fileInfo.next()
 										fileInfo.syncTTSPoint()
 										if (ttsPlaying) {
-											ttsPlay()
+											ttsService.play()
 										}
 										handler.postDelayed({
 											showContent(false)
@@ -431,41 +473,47 @@ class BookActivity : AppCompatActivity() {
 
 			override fun onStopTrackingTouch(p0: SeekBar?) {
 				pageNo.visibility = GONE
+				ttsService.stop()
 				fileInfo.setNewReadPage(seekBar.progress)
+				fileInfo.syncTTSPoint()
+				if (ttsPlaying) {
+					ttsService.play()
+				}
 				showContent(true)
 			}
 
 		})
 
 		prevTopic.setOnClickListener {
-			if (ttsPlaying) {
-				tts.stop()
-			}
+			ttsService.stop()
 			fileInfo.prevTopic()
 			fileInfo.syncTTSPoint()
 			if (ttsPlaying) {
-				ttsPlay()
+				ttsService.play()
 			}
 			showContent(true)
 		}
 
 		nextTopic.setOnClickListener {
-			if (ttsPlaying) {
-				tts.stop()
-			}
+			ttsService.stop()
 			fileInfo.nextTopic()
 			fileInfo.syncTTSPoint()
 			if (ttsPlaying) {
-				ttsPlay()
+				ttsService.play()
 			}
 			showContent(true)
 		}
 
 		ttsButton.setOnClickListener {
-			if (!ttsAvailable) {
+			if (!ttsService.isAvailable) {
 				App.toast(this, "请安装中文 TTS 引擎后再使用本功能！")
 			} else {
 				ttsPlaying = !ttsPlaying
+				if (ttsPlaying) {
+					ttsPlaying = ttsService.play()
+				} else {
+					ttsService.stop()
+				}
 				val drawable = if (ttsPlaying) {
 					ContextCompat.getDrawable(this, R.drawable.ic_pause_white_24dp)
 				} else {
@@ -478,68 +526,17 @@ class BookActivity : AppCompatActivity() {
 				} else if (!ttsPlaying && !showActionBar) {
 					toggleActionBar()
 				}
-				if (ttsPlaying) {
-					ttsPlay()
-				} else {
-					tts.stop()
-				}
 			}
 		}
-
-		tts = TextToSpeech(this) {status ->
-			if (status == TextToSpeech.SUCCESS) {
-				val result = tts.setLanguage(Locale.CHINA)
-				if (result == TextToSpeech.LANG_COUNTRY_AVAILABLE || result == TextToSpeech.LANG_AVAILABLE){
-					ttsAvailable = true
-				}
-			}
-		}
-
-		tts.setOnUtteranceProgressListener(object: UtteranceProgressListener() {
-			override fun onDone(p0: String?) {
-//				println("done: $p0")
-				if (ttsPlaying && p0 == "e-reader-sentence") {
-					ttsPlay()
-				}
-			}
-
-			override fun onError(p0: String?) {
-//				println("error: $p0")
-			}
-
-			override fun onStart(p0: String?) {
-//				println("start: $p0")
-			}
-
-		})
 
 		openBook()
 		keepScreenOn()
 	}
 
 
-	private fun ttsPlay() {
-		while (true) {
-			val sentence = fileInfo.readSentence()
-			if (sentence.sentence != null) {
-//				println(sentence.sentence)
-				val str = sentence.sentence!!.replace(Regex("[\\s\\n\"“”]+"), " ").trim()
-				if (str.isNotEmpty()) {
-					tts.speak(str, TextToSpeech.QUEUE_FLUSH, null, "e-reader-sentence")
-					showContent(true)
-					break
-				} else {
-					continue
-				}
-			}
-		}
-	}
-
 	private fun prevPage() {
 		if (!atBegin) {
-			if (ttsPlaying) {
-				tts.stop()
-			}
+			ttsService.stop()
 			val moveView = flipper.getChildAt(2)
 			moveView.elevation = 20f
 			moveViewTo(moveView, 0f) {
@@ -551,7 +548,7 @@ class BookActivity : AppCompatActivity() {
 				fileInfo.previous()
 				fileInfo.syncTTSPoint()
 				if (ttsPlaying) {
-					ttsPlay()
+					ttsService.play()
 				}
 				handler.postDelayed({
 					showContent(false)
@@ -562,9 +559,7 @@ class BookActivity : AppCompatActivity() {
 
 	private fun nextPage() {
 		if (!atEnd) {
-			if (ttsPlaying) {
-				tts.stop()
-			}
+			ttsService.stop()
 			val moveView = flipper.getChildAt(1)
 			moveView.elevation = 20f
 			moveViewTo(moveView, -boxWidth) {
@@ -573,11 +568,11 @@ class BookActivity : AppCompatActivity() {
 				flipper.addView(topView, 0)
 				setPos()
 				moveView.elevation = 0f
-				if (ttsPlaying) {
-					ttsPlay()
-				}
 				fileInfo.next()
 				fileInfo.syncTTSPoint()
+				if (ttsPlaying) {
+					ttsService.play()
+				}
 				handler.postDelayed({
 					showContent(false)
 				}, 50)
@@ -939,9 +934,7 @@ class BookActivity : AppCompatActivity() {
 
 	@SuppressLint("RtlHardcoded")
 	private fun onSelectTopic(chapterIndex: Int) {
-		if (ttsPlaying) {
-			tts.stop()
-		}
+		ttsService.stop()
 		fileInfo.readChapter = chapterIndex
 		fileInfo.readPageOfChapter = 0
 		var p = 0
@@ -949,8 +942,9 @@ class BookActivity : AppCompatActivity() {
 			p += fileInfo.chapters[i].pages.size
 		}
 		fileInfo.readPage = p
+		fileInfo.syncTTSPoint()
 		if (ttsPlaying) {
-			ttsPlay()
+			ttsService.play()
 		}
 		showContent(true)
 		drawerBox.closeDrawer(Gravity.LEFT, true)
@@ -970,6 +964,9 @@ class BookActivity : AppCompatActivity() {
 			}
 			applySize()
 			fileInfo.syncTTSPoint()
+			if (::ttsService.isInitialized) {
+				ttsService.setFileInfo(fileInfo)
+			}
 			showContent(true)
 		} catch (e: Exception) {
 			println("Open index file failed, need to initialize!")
@@ -1175,6 +1172,9 @@ class BookActivity : AppCompatActivity() {
 			seekBar.max = fileInfo.totalPages - 1
 			app.saveFileIndex(fileInfo, summary.key)
 			fileInfo.syncTTSPoint()
+			if (::ttsService.isInitialized) {
+				ttsService.setFileInfo(fileInfo)
+			}
 			showContent(true)
 			val adapter = TopicListAdapter(this, fileInfo.chapters)
 			adapter.onSelectTopic = this::onSelectTopic

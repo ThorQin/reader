@@ -187,15 +187,30 @@ class App : Application() {
 			}
 		}
 
-		class SentenceInfo(var sentence: String?, var changePage: Boolean)
+		class SentenceInfo(var sentence: String?, var nextPos: Long)
 
-		fun readSentence(): SentenceInfo {
-			val result = SentenceInfo(null, false)
+		fun setTtsPosition(pos: Long) {
+			ttsPoint = pos
+			var chapter = chapters[readChapter]
+			var page = chapter.pages[readPageOfChapter]
+			while (ttsPoint > page.start + page.length) {
+				if (next()) {
+					chapter = chapters[readChapter]
+					page = chapter.pages[readPageOfChapter]
+				} else {
+					break
+				}
+			}
+		}
+
+		fun getTtsSentence(ttsPos: Long): SentenceInfo {
+			var pos = ttsPos
+			val result = SentenceInfo(null, pos)
 			if (readChapter < chapters.size) {
 				val file = File(path)
 				file.inputStream().use {
 					it.reader(Charset.forName(encoding)).use { it1 ->
-						it1.skip(ttsPoint)
+						it1.skip(pos)
 						val buffer = CharArray(2048)
 						val size = it1.read(buffer)
 						if (size > 0) {
@@ -204,25 +219,15 @@ class App : Application() {
 							val m = sentenceToken.matcher(str)
 							if (m.find()) {
 								result.sentence = str.substring(0, m.start() + 1)
-								ttsPoint += result.sentence!!.length
+								pos += result.sentence!!.length
 							} else {
 								result.sentence = str
-								ttsPoint += size
+								pos += size
 							}
+							result.nextPos = pos
 						} else {
 							return result
 						}
-					}
-				}
-				var chapter = chapters[readChapter]
-				var page = chapter.pages[readPageOfChapter]
-				while (ttsPoint > page.start + page.length) {
-					if (next()) {
-						result.changePage = true
-						chapter = chapters[readChapter]
-						page = chapter.pages[readPageOfChapter]
-					} else {
-						break
 					}
 				}
 			}
