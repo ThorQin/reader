@@ -8,10 +8,7 @@ import kotlinx.android.synthetic.main.activity_book.*
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -98,6 +95,7 @@ class BookActivity : AppCompatActivity() {
 		}
 
 	}
+
 
 	private lateinit var handler: Handler
 	private lateinit var summary: App.FileSummary
@@ -468,11 +466,13 @@ class BookActivity : AppCompatActivity() {
 			}
 
 			override fun onStartTrackingTouch(p0: SeekBar?) {
+				ttsButton.visibility = GONE
 				pageNo.visibility = VISIBLE
 			}
 
 			override fun onStopTrackingTouch(p0: SeekBar?) {
 				pageNo.visibility = GONE
+				ttsButton.visibility = VISIBLE
 				ttsService.stop()
 				fileInfo.setNewReadPage(seekBar.progress)
 				fileInfo.syncTTSPoint()
@@ -510,9 +510,9 @@ class BookActivity : AppCompatActivity() {
 			} else {
 				ttsPlaying = !ttsPlaying
 				if (ttsPlaying) {
-					ttsPlaying = ttsService.play()
+					ttsPlaying = ttsService.play(true)
 				} else {
-					ttsService.stop()
+					ttsService.stop(true)
 				}
 				val drawable = if (ttsPlaying) {
 					ContextCompat.getDrawable(this, R.drawable.ic_pause_white_24dp)

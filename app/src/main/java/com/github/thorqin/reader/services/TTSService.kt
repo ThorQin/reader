@@ -1,38 +1,29 @@
 package com.github.thorqin.reader.services
 
-import android.app.Service
-import android.content.BroadcastReceiver
-import android.content.Context
+import android.app.*
+import com.github.thorqin.reader.R
 import android.content.Intent
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.github.thorqin.reader.App
 import java.util.*
-import android.content.IntentFilter
-import androidx.core.content.ContextCompat.getSystemService
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-import androidx.core.content.ContextCompat.getSystemService
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-import android.R.attr.name
 import android.os.*
-import android.view.KeyEvent
-import android.os.Bundle
-import androidx.core.content.ContextCompat.getSystemService
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-import android.R.attr.name
-import androidx.core.content.ContextCompat.getSystemService
-import android.media.AudioManager
-import androidx.media.session.MediaButtonReceiver
-import android.content.ComponentName
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-import android.R.attr.name
-
-
-
-
+import android.content.Context
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.PlaybackStateCompat
+import com.github.thorqin.reader.activities.book.BookActivity
+import com.github.thorqin.reader.activities.main.MainActivity
 
 
 class TTSService : Service() {
+
+	companion object {
+		const val MEDIA_SESSION_ACTIONS = PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE
+		const val NOTIFICATIONS_ID = 1
+		const val CHANNEL_ID = "TTS-SERVICE-CHANNEL"
+		const val CHANNEL_NAME = "EReader TTS"
+	}
 
 	interface StateListener {
 		fun onStop()
@@ -55,47 +46,57 @@ class TTSService : Service() {
 
 	private lateinit var handler: Handler
 
-	private var mediaButtonReceiver = object: BroadcastReceiver() {
-		override fun onReceive(context: Context, intent: Intent) {
-			// KeyEvent.KEYCODE_MEDIA_NEXT、KeyEvent.KEYCODE_MEDIA_PREVIOUS、KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
-			if (intent.action != Intent.ACTION_MEDIA_BUTTON)
-				return
-			val event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT) as KeyEvent? ?: return
-			if (event.action != KeyEvent.ACTION_UP)
-				return
+	private lateinit var mediaSession: MediaSessionCompat
 
-			val keyCode = event.keyCode
-			// val eventTime = event.eventTime - event.downTime //按键按下到松开的时长
-			if (keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
-				abortBroadcast()
-				handler.post {
-					if (playing) {
-						stop()
-						stateListener?.onStop()
-					} else {
-						play()
-						stateListener?.onStart()
-					}
-				}
+
+//	private var mediaButtonReceiver = object: BroadcastReceiver() {
+//		override fun onReceive(context: Context, intent: Intent) {
+//			// KeyEvent.KEYCODE_MEDIA_NEXT、KeyEvent.KEYCODE_MEDIA_PREVIOUS、KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
+//			if (intent.action != Intent.ACTION_MEDIA_BUTTON)
+//				return
+//			val event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT) as KeyEvent? ?: return
+//			if (event.action != KeyEvent.ACTION_UP)
+//				return
+//
+//			val keyCode = event.keyCode
+//			// val eventTime = event.eventTime - event.downTime //按键按下到松开的时长
+//			if (keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
+//				abortBroadcast()
+//				handler.post {
+//					if (playing) {
+//						stop()
+//						stateListener?.onStop()
+//					} else {
+//						play()
+//						stateListener?.onStart()
+//					}
+//				}
+//			}
+//		}
+//	}
+
+
+	private fun createMediaSession() {
+		mediaSession = MediaSessionCompat(this, "EReader")
+		mediaSession.setCallback(object: MediaSessionCompat.Callback() {
+			override fun onPlay() {
+				super.onPlay()
+				println("play")
 			}
-		}
+			override fun onStop() {
+				super.onPlay()
+				println("stop")
+			}
+		})
+		mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+		mediaSession.isActive = true
 	}
 
 	override fun onCreate() {
 		super.onCreate()
 		handler = Handler(Looper.getMainLooper())
 
-
-//		mediaButtonReceiver = ComponentName(packageName, MediaButtonReceiver::class.java.name)
-//
-//		mAudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-//
-//		mAudioManager.registerMediaButtonEventReceiver(mediaButtonReceiver)
-
-		val mediaFilter = IntentFilter()
-		mediaFilter.addAction(Intent.ACTION_MEDIA_BUTTON)
-		mediaFilter.priority = 1000
-		registerReceiver(mediaButtonReceiver, mediaFilter)
+		createMediaSession()
 
 		tts = TextToSpeech(this) {status ->
 			if (status == TextToSpeech.SUCCESS) {
@@ -123,16 +124,18 @@ class TTSService : Service() {
 			}
 
 			override fun onStart(p0: String?) {
-				println("start: $p0")
+				// println("start: $p0")
 			}
 
 		})
+
+
 	}
 
 	override fun onDestroy() {
 		try {
-			unregisterReceiver(mediaButtonReceiver)
 			tts.shutdown()
+			mediaSession.release()
 		} catch (e: Throwable) {
 
 		}
@@ -160,7 +163,7 @@ class TTSService : Service() {
 					readingPos = sentence.nextPos
 				}
 			} else {
-				stop()
+				stop(true)
 				stateListener?.onStop()
 				break
 			}
@@ -173,23 +176,64 @@ class TTSService : Service() {
 	}
 
 
-	fun play(): Boolean {
+	fun play(setup: Boolean = false): Boolean {
 		if (ttsAvailable) {
 			if (playing) {
-				stop()
+				stop(setup)
 			}
 			val info = playInfo ?: return false
 			playing = true
 			readingPos = info.ttsPoint
 			ttsPlay()
+
+			if (setup) {
+				mediaSession.setPlaybackState(PlaybackStateCompat.Builder()
+					.setActions(MEDIA_SESSION_ACTIONS)
+					.setState(PlaybackStateCompat.STATE_PLAYING, 0L, 1f).build())
+
+				mediaSession.setMetadata(MediaMetadataCompat.Builder()
+					.putText(MediaMetadataCompat.METADATA_KEY_TITLE, "Ereader TTS")
+					.build())
+
+				val notificationIntent = Intent(this, BookActivity::class.java)
+				val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0)
+				val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+				val builder = Notification.Builder(this)
+					.setContentTitle(this.getString(R.string.app_name))
+					.setContentText("正在使用语音播放图书...")
+					.setSmallIcon(R.drawable.ic_book)
+					.setContentIntent(pendingIntent)
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+					val notificationChannel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_MIN)
+					notificationChannel.enableLights(false)
+					notificationChannel.setShowBadge(false)
+					notificationChannel.lockscreenVisibility = Notification.VISIBILITY_SECRET
+					notificationManager.createNotificationChannel(notificationChannel)
+					builder.setChannelId(CHANNEL_ID)
+				}
+				val notification = builder.build()
+				notificationManager.notify(NOTIFICATIONS_ID, notification)
+				startForeground(NOTIFICATIONS_ID, notification)
+			}
 		}
+
 		return playing
 	}
 
-	fun stop() {
+	fun stop(setup: Boolean = false) {
 		if (ttsAvailable && playing) {
 			tts.stop()
 			playing = false
+			if (setup) {
+				mediaSession.setPlaybackState(
+					PlaybackStateCompat.Builder()
+						.setActions(MEDIA_SESSION_ACTIONS)
+						.setState(PlaybackStateCompat.STATE_PAUSED, 0L, 1f).build()
+				)
+				stopForeground(false)
+				val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+				notificationManager.cancel(NOTIFICATIONS_ID)
+			}
 		}
 	}
 
