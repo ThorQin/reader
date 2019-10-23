@@ -51,4 +51,6 @@
 	<string name="upgrade">更新</string>
 	<string name="upToDate">您当前已经是最新版本！</string>
 	<string name="downloading">下载安装包...</string>
+	<string name="no_explanation_found">没有找到解释！</string>
+	<string name="use_volume_button_to_flip">使用音量键翻页</string>
 </resources>

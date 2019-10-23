@@ -23,15 +23,8 @@
 		tools:ignore="GoogleAppIndexingWarning">
 		<service
 			android:name=".services.TTSService"
-			android:enabled="true"
-			android:exported="false">
+			android:enabled="true">
 		</service>
-
-<!--		<receiver android:name=".services.TTSService">-->
-<!--			<intent-filter>-->
-<!--				<action android:name="android.intent.action.MEDIA_BUTTON" />-->
-<!--			</intent-filter>-->
-<!--		</receiver>-->
 
 		<provider
 			android:name=".activities.main.MyFileProvider"
@@ -54,19 +47,20 @@
 			</intent-filter>
 		</activity>
 		<activity
+			android:launchMode="singleTask"
 			android:name=".activities.main.MainActivity"
-			android:launchMode="singleInstance"
 			android:screenOrientation="portrait"
 			android:theme="@style/MainActivityTheme" />
 		<activity
 			android:name=".activities.book.BookActivity"
 			android:label=""
-			android:launchMode="singleTop"
+			android:launchMode="singleTask"
 			android:screenOrientation="portrait"
 			android:theme="@style/BookActivityTheme" />
 		<activity
 			android:name=".activities.setting.SettingsActivity"
 			android:label="@string/setting"
+			android:launchMode="singleTask"
 			android:screenOrientation="portrait" />
 
 	</application>

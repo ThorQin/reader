@@ -301,6 +301,7 @@ class App : Application() {
 		var eyeCareMode = false
 		var clickToFlip = false
 		var neverLock = false
+		var volumeFlip = false
 	}
 
 	companion object {

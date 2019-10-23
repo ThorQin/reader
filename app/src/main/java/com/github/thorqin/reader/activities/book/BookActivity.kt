@@ -14,6 +14,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.TypedValue
 import android.view.*
 import android.view.View.*
 import android.widget.*
@@ -591,6 +592,23 @@ class BookActivity : AppCompatActivity() {
 				true
 			}
 			else -> super.onKeyUp(keyCode, event)
+		}
+	}
+
+	override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+		if (ttsPlaying || !app.config.volumeFlip) {
+			return super.onKeyDown(keyCode, event)
+		}
+		return when (keyCode) {
+			KeyEvent.KEYCODE_VOLUME_DOWN -> {
+				nextPage()
+				true
+			}
+			KeyEvent.KEYCODE_VOLUME_UP -> {
+				prevPage()
+				true
+			}
+			else -> super.onKeyDown(keyCode, event)
 		}
 	}
 
@@ -1343,14 +1361,14 @@ class BookActivity : AppCompatActivity() {
 	}
 
 	private fun createTranslationItem(item: Dict): View {
-		val translation_item = inflate(this, R.layout.translation_item, null)
-		val wordView = translation_item.findViewById<TextView>(R.id.translation_word)
-		val phoneticView = translation_item.findViewById<TextView>(R.id.translation_phonetic)
-		val definitionView = translation_item.findViewById<TextView>(R.id.translation_definition)
+		val translationItem = inflate(this, R.layout.translation_item, null)
+		val wordView = translationItem.findViewById<TextView>(R.id.translation_word)
+		val phoneticView = translationItem.findViewById<TextView>(R.id.translation_phonetic)
+		val definitionView = translationItem.findViewById<TextView>(R.id.translation_definition)
 		wordView.text = item.word
 		phoneticView.text = item.phonetic
 		definitionView.text = item.definition
-		return translation_item
+		return translationItem
 	}
 
 
@@ -1395,8 +1413,18 @@ class BookActivity : AppCompatActivity() {
 
 		queryWordDefinition(txt, success = { result ->
 			if (!cancelled) {
-				for (dict in result) {
-					val view = createTranslationItem(dict)
+				if (result.isNotEmpty()) {
+					for (dict in result) {
+						val view = createTranslationItem(dict)
+						container.addView(view)
+					}
+				} else {
+					val view = TextView(this)
+					view.setTextColor(resources.getColor(R.color.colorWhite, null))
+					view.setPadding(20, 40, 20, 40)
+					view.textAlignment = TEXT_ALIGNMENT_CENTER
+					view.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18f)
+					view.text = getString(R.string.no_explanation_found)
 					container.addView(view)
 				}
 				loading.visibility = GONE

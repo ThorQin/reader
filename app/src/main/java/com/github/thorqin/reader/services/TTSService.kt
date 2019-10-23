@@ -13,10 +13,11 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import com.github.thorqin.reader.activities.book.BookActivity
-import com.github.thorqin.reader.activities.main.MainActivity
+import android.media.MediaPlayer
+import android.view.KeyEvent
 
 
-class TTSService : Service() {
+class TTSService : Service()  {
 
 	companion object {
 		const val MEDIA_SESSION_ACTIONS = PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE
@@ -24,6 +25,7 @@ class TTSService : Service() {
 		const val CHANNEL_ID = "TTS-SERVICE-CHANNEL"
 		const val CHANNEL_NAME = "EReader TTS"
 	}
+
 
 	interface StateListener {
 		fun onStop()
@@ -45,51 +47,46 @@ class TTSService : Service() {
 	private var nextPos =0L
 
 	private lateinit var handler: Handler
-
 	private lateinit var mediaSession: MediaSessionCompat
-
-
-//	private var mediaButtonReceiver = object: BroadcastReceiver() {
-//		override fun onReceive(context: Context, intent: Intent) {
-//			// KeyEvent.KEYCODE_MEDIA_NEXT、KeyEvent.KEYCODE_MEDIA_PREVIOUS、KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
-//			if (intent.action != Intent.ACTION_MEDIA_BUTTON)
-//				return
-//			val event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT) as KeyEvent? ?: return
-//			if (event.action != KeyEvent.ACTION_UP)
-//				return
-//
-//			val keyCode = event.keyCode
-//			// val eventTime = event.eventTime - event.downTime //按键按下到松开的时长
-//			if (keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
-//				abortBroadcast()
-//				handler.post {
-//					if (playing) {
-//						stop()
-//						stateListener?.onStop()
-//					} else {
-//						play()
-//						stateListener?.onStart()
-//					}
-//				}
-//			}
-//		}
-//	}
-
+	private lateinit var stateBuilder: PlaybackStateCompat.Builder
 
 	private fun createMediaSession() {
-		mediaSession = MediaSessionCompat(this, "EReader")
-		mediaSession.setCallback(object: MediaSessionCompat.Callback() {
-			override fun onPlay() {
-				super.onPlay()
-				println("play")
-			}
-			override fun onStop() {
-				super.onPlay()
-				println("stop")
-			}
-		})
-		mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
-		mediaSession.isActive = true
+		stateBuilder = PlaybackStateCompat.Builder()
+			.setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE)
+		mediaSession = MediaSessionCompat(this, "EReader").apply {
+			setCallback(object: MediaSessionCompat.Callback() {
+				override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
+
+					if (mediaButtonEvent == null) {
+						return super.onMediaButtonEvent(mediaButtonEvent)
+					}
+					val keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT) as KeyEvent
+					if (keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE || keyEvent.keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
+						if (keyEvent.action == KeyEvent.ACTION_UP) {
+							if (playing) {
+								stop(true)
+								stateListener?.onStop()
+							} else {
+								play(true)
+								stateListener?.onStart()
+							}
+							return true
+						}
+					}
+					// println("media button event: ${mediaButtonEvent.action}, KeyCode: ${keyEvent.keyCode}")
+					return super.onMediaButtonEvent(mediaButtonEvent)
+				}
+			})
+			setPlaybackState(stateBuilder.build())
+			setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+			isActive = true
+		}
+	}
+
+	private fun playSilentSound() {
+		val player = MediaPlayer.create(this, R.raw.silent_sound)
+		player.setOnCompletionListener { player.release() }
+		player.start()
 	}
 
 	override fun onCreate() {
@@ -187,6 +184,7 @@ class TTSService : Service() {
 			ttsPlay()
 
 			if (setup) {
+				playSilentSound()
 				mediaSession.setPlaybackState(PlaybackStateCompat.Builder()
 					.setActions(MEDIA_SESSION_ACTIONS)
 					.setState(PlaybackStateCompat.STATE_PLAYING, 0L, 1f).build())

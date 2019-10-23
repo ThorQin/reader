@@ -46,6 +46,18 @@ class SettingsActivity : AppCompatActivity() {
 			app.saveConfig()
 		}
 
+		// Volume Button to Flip
+		volumeToFlipSwitch.isChecked = app.config.volumeFlip
+		volumeToFlip.setOnClickListener {
+			volumeToFlipSwitch.toggle()
+			app.config.volumeFlip = volumeToFlipSwitch.isChecked
+			app.saveConfig()
+		}
+		volumeToFlipSwitch.setOnClickListener {
+			app.config.volumeFlip = volumeToFlipSwitch.isChecked
+			app.saveConfig()
+		}
+
 	}
 
 	override fun onOptionsItemSelected(item: MenuItem): Boolean {
