@@ -53,4 +53,5 @@
 	<string name="downloading">Downloading...</string>
 	<string name="no_explanation_found">No explanation found!</string>
 	<string name="use_volume_button_to_flip">Use Volume Button to Flip</string>
+	<string name="feedback">Feedback</string>
 </resources>

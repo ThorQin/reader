@@ -53,4 +53,5 @@
 	<string name="downloading">下载安装包...</string>
 	<string name="no_explanation_found">没有找到解释！</string>
 	<string name="use_volume_button_to_flip">使用音量键翻页</string>
+	<string name="feedback">问题反馈</string>
 </resources>

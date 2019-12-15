@@ -38,6 +38,12 @@
 
 	<group android:id="@+id/menu_group_3">
 		<item
+			android:id="@+id/feedback"
+			android:enabled="true"
+			android:title="@string/feedback"
+			app:showAsAction="withText" />
+
+		<item
 			android:id="@+id/about"
 			android:enabled="true"
 			android:title="@string/about"
