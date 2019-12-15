@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="app_name">Light Glance</string>
+	<string name="app_name">Light Reading</string>
 	<string name="cannot_init_book">Cannot initialize book info</string>
 	<string name="clear_book">Empty bookshelf</string>
 	<string name="file_not_exists">File does not exists, would you like to remove it?</string>

@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
@@ -33,11 +34,11 @@ import java.nio.charset.Charset
 import java.util.*
 import kotlin.concurrent.timer
 
-class UpdateManager(private var activity: MainActivity, private var handler: Handler) {
+class UpdateManager(private var activity: MainActivity) {
 	private var downloadId: Long? = null
-	private var downloadManager: DownloadManager = activity.getSystemService(AppCompatActivity.DOWNLOAD_SERVICE) as DownloadManager
+	private val downloadManager: DownloadManager = activity.getSystemService(AppCompatActivity.DOWNLOAD_SERVICE) as DownloadManager
 	private val downloadManagerReceiver: BroadcastReceiver
-
+	private val handler: Handler = Handler(Looper.getMainLooper())
 	init {
 		downloadManagerReceiver = object : BroadcastReceiver() {
 			override fun onReceive(context: Context?, intent: Intent?) {

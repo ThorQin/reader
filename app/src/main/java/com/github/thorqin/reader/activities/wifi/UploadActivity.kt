@@ -26,9 +26,11 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.URLDecoder
 
-const val LISTEN_PORT = 8000
-
 class UploadActivity : AppCompatActivity() {
+
+	companion object {
+		const val LISTEN_PORT = 8000
+	}
 
 	private val app: App
 		get() {

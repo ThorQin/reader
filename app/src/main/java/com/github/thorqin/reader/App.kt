@@ -360,8 +360,8 @@ class App : Application() {
 			dlg.show()
 		}
 
-		fun toast(context: Context, msg: String) {
-			Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+		fun toast(context: Context, msg: String, showItem: Int = Toast.LENGTH_LONG) {
+			Toast.makeText(context, msg, showItem).show()
 		}
 	}
 

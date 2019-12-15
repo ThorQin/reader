@@ -6,9 +6,17 @@ import com.google.gson.ExclusionStrategy
 import com.google.gson.FieldAttributes
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.koushikdutta.async.ByteBufferList
+import com.koushikdutta.async.http.AsyncHttpClient
+import com.koushikdutta.async.http.AsyncHttpGet
+import com.koushikdutta.async.http.AsyncHttpPost
+import com.koushikdutta.async.http.AsyncHttpResponse
+import com.koushikdutta.async.http.body.AsyncHttpRequestBody
+import com.koushikdutta.async.http.body.StringBody
 import java.io.IOException
 import java.io.InputStream
 import java.io.PushbackInputStream
+import java.lang.Exception
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.net.NetworkInterface.getNetworkInterfaces
@@ -174,4 +182,101 @@ fun readTextResource(context: Context, resId: Int): String {
 			return textReader.readText()
 		}
 	}
+}
+
+class AppInfo (
+	val code: Int,
+	val version: String,
+	val description: String,
+	val download: String,
+	val webSite: String?
+)
+
+fun getAppInfo(success: (appInfo: AppInfo?) -> Unit, error: (msg: String) -> Unit ) {
+	val url = "http://thor.qin.gitee.io/ereader-web/version.json"
+	httpGet(url, AppInfo::class.java, success, error)
+}
+
+class JsonStringBody(content: String): StringBody(content) {
+	override fun getContentType(): String {
+		return "application/json"
+	}
+}
+
+fun <T>httpPost(url: String, data: Any, resultType: Class<T>, success: (result: T?) -> Unit, error: (msg: String) -> Unit) {
+
+	val request = AsyncHttpPost(url)
+
+	val content = json().toJson(data)
+	request.body = JsonStringBody(content)
+
+	AsyncHttpClient.getDefaultInstance().executeByteBufferList(request,
+		object : AsyncHttpClient.DownloadCallback() {
+			override fun onCompleted(
+				e: Exception?,
+				source: AsyncHttpResponse?,
+				result: ByteBufferList?
+			) {
+				if (e != null) {
+					error(if (e.message != null ) e.message!! else e.toString())
+					return
+				}
+				if (result == null) {
+					success(null)
+					return
+				}
+				val bytes = result.allByteArray
+				if (bytes.isEmpty()) {
+					success(null)
+					return
+				}
+				try {
+					val result = json().fromJson(
+						String(bytes, Charset.forName("utf-8")),
+						resultType
+					) as T
+					success(result)
+				} catch (e: Exception) {
+					error(if (e.message != null ) e.message!! else e.toString())
+				}
+			}
+		}
+	)
+}
+
+
+fun <T>httpGet(url: String, resultType: Class<T>, success: (result: T?) -> Unit, error: (msg: String) -> Unit) {
+	val request = AsyncHttpGet(url)
+	AsyncHttpClient.getDefaultInstance().executeByteBufferList(request,
+		object : AsyncHttpClient.DownloadCallback() {
+			override fun onCompleted(
+				e: Exception?,
+				source: AsyncHttpResponse?,
+				result: ByteBufferList?
+			) {
+				if (e != null) {
+					error(if (e.message != null ) e.message!! else e.toString())
+					return
+				}
+				if (result == null) {
+					success(null)
+					return
+				}
+				val bytes = result.allByteArray
+				if (bytes.isEmpty()) {
+					success(null)
+					return
+				}
+				try {
+					val result = json().fromJson(
+						String(bytes, Charset.forName("utf-8")),
+						resultType
+					) as T
+					success(result)
+				} catch (e: Exception) {
+					error(if (e.message != null ) e.message!! else e.toString())
+				}
+			}
+		}
+	)
 }

@@ -21,10 +21,11 @@
 		android:supportsRtl="true"
 		android:theme="@style/AppTheme"
 		tools:ignore="GoogleAppIndexingWarning">
+		<activity android:name=".activities.community.CommunityActivity"></activity>
+
 		<service
 			android:name=".services.TTSService"
-			android:enabled="true">
-		</service>
+			android:enabled="true"></service>
 
 		<provider
 			android:name=".activities.main.MyFileProvider"
@@ -47,8 +48,8 @@
 			</intent-filter>
 		</activity>
 		<activity
-			android:launchMode="singleTask"
 			android:name=".activities.main.MainActivity"
+			android:launchMode="singleTask"
 			android:screenOrientation="portrait"
 			android:theme="@style/MainActivityTheme" />
 		<activity
@@ -62,7 +63,6 @@
 			android:label="@string/setting"
 			android:launchMode="singleTask"
 			android:screenOrientation="portrait" />
-
 	</application>
 
 </manifest>

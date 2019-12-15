@@ -14,6 +14,7 @@ import androidx.core.view.MenuCompat
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.R
 import com.github.thorqin.reader.activities.book.BookActivity
+import com.github.thorqin.reader.activities.community.CommunityActivity
 import com.github.thorqin.reader.activities.wifi.UploadActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -22,6 +23,7 @@ const val REQUEST_SEARCH_BOOK = 1
 const val REQUEST_OPEN_BOOK = 2
 const val REQUEST_OPEN_UPLOAD = 3
 const val REQUEST_CHECK_UPDATE = 4
+const val REQUEST_OPEN_COMMUNITY = 5
 
 class MyFileProvider : FileProvider()
 
@@ -46,7 +48,7 @@ class MainActivity : AppCompatActivity() {
 		setSupportActionBar(toolbar)
 
 		handler = Handler(Looper.getMainLooper())
-		updateManager = UpdateManager(this, handler)
+		updateManager = UpdateManager(this)
 		feedbackManager = FeedbackManager(this)
 		bookManager = BookManager(this)
 
@@ -97,6 +99,10 @@ class MainActivity : AppCompatActivity() {
 				feedbackManager.showFeedback()
 				true
 			}
+			R.id.interchange -> {
+				showCommunity()
+				true
+			}
 			R.id.check_update -> {
 				updateManager.checkUpdate()
 				true
@@ -138,7 +144,7 @@ class MainActivity : AppCompatActivity() {
 				app.config.lastRead = null
 				app.saveConfig()
 			}
-			REQUEST_OPEN_UPLOAD -> bookManager.showFiles()
+			REQUEST_OPEN_UPLOAD, REQUEST_OPEN_COMMUNITY -> bookManager.showFiles()
 			REQUEST_CHECK_UPDATE -> updateManager.checkUpdate()
 		}
 	}
@@ -157,6 +163,9 @@ class MainActivity : AppCompatActivity() {
 		startActivityForResult(intent, REQUEST_OPEN_UPLOAD)
 	}
 
-
+	private fun showCommunity() {
+		val intent = Intent(this, CommunityActivity::class.java)
+		startActivityForResult(intent, REQUEST_OPEN_COMMUNITY)
+	}
 
 }

@@ -81,4 +81,11 @@
 
 	</style>
 
+	<style name="loadingDialogStyle" parent="@style/Theme.AppCompat.Dialog.Alert">
+		<item name="android:windowBackground">@color/translucentBackground</item>
+		<item name="android:background">@color/translucentBackground</item>
+		<item name="android:textColor">@color/colorWhite</item>
+
+	</style>
+
 </resources>
