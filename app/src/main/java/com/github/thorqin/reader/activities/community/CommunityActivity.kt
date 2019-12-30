@@ -84,26 +84,45 @@ class CommunityActivity : AppCompatActivity() {
 		webView.setBackgroundColor(getColor(R.color.colorBlack))
 
 		webView.addJavascriptInterface(object {
+
 			@JavascriptInterface
-			fun showMessage() {
-				println("invoked!!")
+			fun showToast(message: String) {
+				App.toast(this@CommunityActivity, message)
+			}
+
+			@JavascriptInterface
+			fun msgbox(message: String) {
+				App.msgbox(this@CommunityActivity, message, this@CommunityActivity.getString(R.string.app_name))
+			}
+
+			@JavascriptInterface
+			fun askbox(message: String, callbackKey: String) {
+				App.askbox(this@CommunityActivity, message, this@CommunityActivity.getString(R.string.app_name), {
+					runOnUiThread {
+						webView.evaluateJavascript("eReaderClient.invokeCallback('$callbackKey', true)", null)
+					}
+				}, {
+					runOnUiThread {
+						webView.evaluateJavascript("eReaderClient.invokeCallback('$callbackKey', false)", null)
+					}
+				})
+			}
+
+			@JavascriptInterface
+			fun close() {
+				finish()
 			}
 		}, "eReader")
 
 		webView.webChromeClient = object: WebChromeClient() {
-			override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-				return super.onConsoleMessage(consoleMessage)
-				println(consoleMessage?.message())
-			}
+//			override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+//				return super.onConsoleMessage(consoleMessage)
+//			}
 		}
 		webView.webViewClient = object: WebViewClient() {
-			override fun onPageFinished(view: WebView?, url: String?) {
-				super.onPageFinished(view, url)
-				// webView.loadUrl(inject.replace(Regex("\\s+"), ""))
-//				webView.evaluateJavascript(inject) {
-//					// println(it)
-//				}
-			}
+//			override fun onPageFinished(view: WebView?, url: String?) {
+//				super.onPageFinished(view, url)
+//			}
 
 			override fun onReceivedError(
 				view: WebView?,
@@ -138,7 +157,7 @@ class CommunityActivity : AppCompatActivity() {
 
 		getAppInfo({
 			runOnUiThread {
-				mainPage = if (it?.webSite == null) "http://localhost:8080/" else it.webSite
+				mainPage = if (it?.webSite == null) "http://192.168.1.5:8080/" else it.webSite
 				webView.loadUrl(mainPage)
 			}
 		}, {
@@ -149,10 +168,16 @@ class CommunityActivity : AppCompatActivity() {
 	}
 
 	override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-		if ((keyCode == KEYCODE_BACK) && webView.canGoBack()) {
-			webView.goBack()
+		if (keyCode == KEYCODE_BACK) {
+			webView.evaluateJavascript("eReaderClient.popWindow()") {
+				if (it == "false") {
+					this.finish()
+				}
+			}
+
 			return true
+		} else {
+			return super.onKeyDown(keyCode, event)
 		}
-		return super.onKeyDown(keyCode, event)
 	}
 }

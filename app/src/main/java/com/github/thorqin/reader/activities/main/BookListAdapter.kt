@@ -44,9 +44,9 @@ class BookListAdapter(
 		val item = it.tag as App.FileSummary
 
 		if (!File(item.path).exists()) {
-			App.askbox(context, context.getString(R.string.file_not_exists), null) {
+			App.askbox(context, context.getString(R.string.file_not_exists), null, {
 				onDeleteItem(item.key)
-			}
+			}, null)
 			return@OnClickListener
 		}
 		val intent = Intent(context, BookActivity::class.java)

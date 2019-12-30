@@ -78,7 +78,6 @@
 	<style name="dialogStyle" parent="@style/Theme.AppCompat.Dialog.Alert">
 		<item name="android:background">@color/colorWorkspace</item>
 		<item name="android:textColor">@color/colorWhite</item>
-
 	</style>
 
 	<style name="loadingDialogStyle" parent="@style/Theme.AppCompat.Dialog.Alert">

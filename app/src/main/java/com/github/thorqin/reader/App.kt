@@ -335,28 +335,38 @@ class App : Application() {
 			val scale = context.resources.displayMetrics.density
 			return (pxValue / scale + 0.5f).toInt()
 		}
+		*/
 
-		@JvmStatic
 		fun msgbox(context: Context, msg: String, title: String?) {
-			val dialog = AlertDialog.Builder(context)
+			val dialog = AlertDialog.Builder(context, R.style.dialogStyle)
 			if (title != null) {
 				dialog.setTitle(title)
+			}
+			dialog.setPositiveButton(R.string.ok) { _, _ ->
+
 			}
 			dialog.setMessage(msg)
 			dialog.show()
 		}
-		*/
 
-		fun askbox(context: Context, msg: String, title: String?, onOk: () -> Unit) {
-			val dlg = AlertDialog.Builder(context)
+		fun askbox(context: Context, msg: String, title: String?, onOk: () -> Unit, onCancel: (() -> Unit)?) {
+			val dlg = AlertDialog.Builder(context, R.style.dialogStyle)
 			if (title != null) {
 				dlg.setTitle(title)
 			}
 			dlg.setMessage(msg)
-			dlg.setPositiveButton("确定") { _, _ ->
+			dlg.setPositiveButton(R.string.ok) { _, _ ->
 				onOk()
 			}
+			dlg.setNegativeButton(R.string.cancel) { _, _ ->
+				if (onCancel != null)
+					onCancel()
+			}
 			dlg.setCancelable(true)
+			dlg.setOnCancelListener {
+				if (onCancel != null)
+					onCancel()
+			}
 			dlg.show()
 		}
 
