@@ -14,6 +14,7 @@ import java.io.*
 import java.lang.Exception
 import java.nio.charset.Charset
 import java.security.MessageDigest
+import java.text.Collator
 import java.util.*
 import java.util.regex.Pattern
 import java.util.zip.ZipInputStream
@@ -269,6 +270,7 @@ class App : Application() {
 		var key = ""
 		var path = ""
 		var name = ""
+		var hash: String? = null
 		var totalLength = 0L
 		var progress = 0f
 		var lastReadTime: Long? = null
@@ -302,6 +304,26 @@ class App : Application() {
 		var clickToFlip = false
 		var neverLock = false
 		var volumeFlip = false
+
+		fun getList(): List<FileSummary> {
+			val list = mutableListOf<FileSummary>()
+			for (m in this.files.entries) {
+				list.add(m.value)
+			}
+			list.sortWith(Comparator { o1, o2 ->
+				val t1 = if (o1.lastReadTime == null) 0L else o1.lastReadTime as Long
+				val t2 = if (o2.lastReadTime == null) 0L else o2.lastReadTime as Long
+				when {
+					t1 == t2 -> {
+						val com = Collator.getInstance(Locale.CHINA)
+						com.compare(o1.name, o2.name)
+					}
+					t1 > t2 -> -1
+					else -> 1
+				}
+			})
+			return list
+		}
 	}
 
 	companion object {

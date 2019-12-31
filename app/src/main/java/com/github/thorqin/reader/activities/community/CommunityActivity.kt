@@ -1,19 +1,26 @@
 package com.github.thorqin.reader.activities.community
 
-import androidx.appcompat.app.AppCompatActivity
+import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.webkit.*
+import androidx.appcompat.app.AppCompatActivity
 import com.github.thorqin.reader.App
-import com.github.thorqin.reader.R
+import com.github.thorqin.reader.activities.main.MainActivity
 import com.github.thorqin.reader.utils.getAppInfo
 import kotlinx.android.synthetic.main.activity_community.*
-import java.lang.Exception
+import com.github.thorqin.reader.R
+import com.github.thorqin.reader.activities.main.REQUEST_OPEN_UPLOAD
+import com.github.thorqin.reader.activities.wifi.UploadActivity
+import com.github.thorqin.reader.utils.json
 
 class CommunityActivity : AppCompatActivity() {
+
+	private val app: App
+		get() {
+			return application as App
+		}
 
 	lateinit var mainPage: String
 //
@@ -109,6 +116,32 @@ class CommunityActivity : AppCompatActivity() {
 			}
 
 			@JavascriptInterface
+			fun searchLocal() {
+				val bundle = Bundle()
+				bundle.putString("op", "searchLocal")
+				val intent = Intent(this@CommunityActivity, MainActivity::class.java)
+				intent.putExtras(bundle)
+				startActivity(intent)
+			}
+
+			@JavascriptInterface
+			fun wifiUpload(callbackKey: String?) {
+				val intent = Intent(this@CommunityActivity, UploadActivity::class.java)
+				intent.putExtra("callbackKey", callbackKey)
+				startActivityForResult(intent, REQUEST_OPEN_UPLOAD)
+			}
+
+			@JavascriptInterface
+			fun showFiles(callbackKey: String?) {
+				runOnUiThread {
+					val list = app.config.getList()
+					val data = json().toJson(list)
+					println(data)
+					webView.evaluateJavascript("eReaderClient.invokeCallback('$callbackKey', $data)", null)
+				}
+			}
+
+			@JavascriptInterface
 			fun close() {
 				finish()
 			}
@@ -162,6 +195,7 @@ class CommunityActivity : AppCompatActivity() {
 			}
 		}, {
 			runOnUiThread {
+				webView.loadUrl("res://error.html")
 				App.toast(this, "网络图书暂不可用!")
 			}
 		})
@@ -170,7 +204,7 @@ class CommunityActivity : AppCompatActivity() {
 	override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
 		if (keyCode == KEYCODE_BACK) {
 			webView.evaluateJavascript("eReaderClient.popWindow()") {
-				if (it == "false") {
+				if (it == "false" || it == "null") {
 					this.finish()
 				}
 			}
@@ -178,6 +212,18 @@ class CommunityActivity : AppCompatActivity() {
 			return true
 		} else {
 			return super.onKeyDown(keyCode, event)
+		}
+	}
+
+	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+		super.onActivityResult(requestCode, resultCode, data)
+		when (requestCode) {
+			REQUEST_OPEN_UPLOAD -> {
+				val callbackKey = data?.getStringExtra("callbackKey")
+				if (callbackKey != null) {
+					webView.evaluateJavascript("eReaderClient.invokeCallback('$callbackKey')") {}
+				}
+			}
 		}
 	}
 }

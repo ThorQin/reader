@@ -183,22 +183,7 @@ class BookManager(private var activity: MainActivity) {
 		} else {
 			activity.fileList.visibility = View.VISIBLE
 			activity.buttonBar.visibility = View.GONE
-			val list = mutableListOf<App.FileSummary>()
-			for (m in app.config.files.entries) {
-				list.add(m.value)
-			}
-			list.sortWith(Comparator { o1, o2 ->
-				val t1 = if (o1.lastReadTime == null) 0L else o1.lastReadTime as Long
-				val t2 = if (o2.lastReadTime == null) 0L else o2.lastReadTime as Long
-				when {
-					t1 == t2 -> {
-						val com = Collator.getInstance(Locale.CHINA)
-						com.compare(o1.name, o2.name)
-					}
-					t1 > t2 -> -1
-					else -> 1
-				}
-			})
+			val list = app.config.getList()
 			bookAdapter.close()
 			bookAdapter.update(list)
 			activity.fileList.invalidate()

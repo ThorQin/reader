@@ -65,6 +65,14 @@ class MainActivity : AppCompatActivity() {
  		bookManager.showFiles()
 	}
 
+	override fun onNewIntent(intent: Intent?) {
+		super.onNewIntent(intent)
+		val op = intent?.getStringExtra("op")
+		if (op == "searchLocal") {
+			bookManager.searchBooks()
+		}
+	}
+
 	override fun onDestroy() {
 		updateManager.destroy()
 		super.onDestroy()

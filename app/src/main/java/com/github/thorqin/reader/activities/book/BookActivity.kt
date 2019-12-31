@@ -24,10 +24,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.activities.setting.SettingsActivity
 import com.github.thorqin.reader.services.TTSService
-import com.github.thorqin.reader.utils.EPub
-import com.github.thorqin.reader.utils.detectCharset
-import com.github.thorqin.reader.utils.json
-import com.github.thorqin.reader.utils.makeListType
+import com.github.thorqin.reader.utils.*
 import com.koushikdutta.async.http.AsyncHttpClient
 import com.koushikdutta.async.http.AsyncHttpGet
 import com.koushikdutta.async.http.AsyncHttpResponse
@@ -35,6 +32,7 @@ import java.io.File
 import java.lang.Exception
 import java.net.URLEncoder
 import java.nio.charset.Charset
+import java.security.MessageDigest
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.math.abs
@@ -1178,8 +1176,23 @@ class BookActivity : AppCompatActivity() {
 				}
 			}
 
+
 			applySize()
 			val file = File(txtFilePath)
+
+			if (summary.hash == null) { // 首次打开计算文件 HASH
+				val digest = MessageDigest.getInstance("SHA-256")
+				file.inputStream().use {
+					val buf = ByteArray(4096)
+					var size = it.read(buf)
+					while (size > 0) {
+						digest.update(buf, 0, size)
+						size = it.read(buf)
+					}
+				}
+				summary.hash = hexString(digest.digest())
+			}
+
 			fileInfo = parseFile(file, pattern, bookName)
 			fileInfo.topicRule = topicRule
 			app.config.lastRead = summary.key

@@ -66,7 +66,12 @@ class UploadActivity : AppCompatActivity() {
 		supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
 		init()
-
+		val callbackKey = this.intent.getStringExtra("callbackKey")
+		if (callbackKey != null) {
+			val intent = Intent()
+			intent.putExtra("callbackKey", callbackKey)
+			setResult(0, intent)
+		}
 	}
 
 	override fun onOptionsItemSelected(item: MenuItem): Boolean {
