@@ -14,6 +14,7 @@ import com.github.thorqin.reader.R
 import com.github.thorqin.reader.activities.main.REQUEST_OPEN_UPLOAD
 import com.github.thorqin.reader.activities.wifi.UploadActivity
 import com.github.thorqin.reader.utils.json
+import kotlin.concurrent.thread
 
 class CommunityActivity : AppCompatActivity() {
 
@@ -133,12 +134,28 @@ class CommunityActivity : AppCompatActivity() {
 
 			@JavascriptInterface
 			fun showFiles(callbackKey: String?) {
-				runOnUiThread {
+				thread(start = true, isDaemon = true, block = {
+//					Thread.sleep(200)
 					val list = app.config.getList()
 					val data = json().toJson(list)
-					println(data)
-					webView.evaluateJavascript("eReaderClient.invokeCallback('$callbackKey', $data)", null)
-				}
+					runOnUiThread {
+						// println(data)
+						webView.evaluateJavascript("eReaderClient.invokeCallback('$callbackKey', $data)", null)
+					}
+				})
+			}
+
+			@JavascriptInterface
+			fun getBookDesc(key:String, callbackKey: String?) {
+				thread(start = true, isDaemon = true, block = {
+					val detail = app.getFileConfig(key)
+					val desc = detail.getDescription()
+					val data = json().toJson(desc)
+					runOnUiThread {
+						// println(data)
+						webView.evaluateJavascript("eReaderClient.invokeCallback('$callbackKey', $data)", null)
+					}
+				})
 			}
 
 			@JavascriptInterface

@@ -178,6 +178,46 @@ class App : Application() {
 			}
 		}
 
+		fun getDescription(): String {
+			val file = File(path)
+			if (chapters.size == 0) {
+				return ""
+			}
+
+			var idx = 0;
+			val sb = StringBuilder()
+			while (sb.length < 50 && idx < chapters.size) {
+				@Suppress("NAME_SHADOWING")
+				val chapter = chapters[idx++]
+				file.inputStream().use {
+					it.reader(Charset.forName(encoding)).use { it1 ->
+						it1.skip(chapter.startPoint)
+						val buffer = CharArray((chapter.endPoint - chapter.startPoint).toInt())
+						val size = it1.read(buffer)
+						val content = String(buffer, 0, size).trim()
+						if (!content.isNullOrEmpty()) {
+							sb.append(content.replace(Regex("\\r"),"").replace(Regex("\\n{3,}"), "\n\n") + "\n\n")
+						}
+					}
+				}
+			}
+			val s = sb.toString()
+			val summaryPattern = Pattern.compile("(?:序[章幕]?|前言|引子|简介|契子)\\s*\\n((?:.|\\n)+)$", Pattern.MULTILINE)
+			val m = summaryPattern.matcher(s)
+			return if (m.find()) {
+				val c = m.group(1)
+				val p = Pattern.compile(TOPIC_RULE, Pattern.CASE_INSENSITIVE)
+				val mEnd = p.matcher(c)
+				if (mEnd.find()) {
+					s.substring(0, mEnd.start())
+				} else {
+					c
+				}
+			} else {
+				s
+			}
+		}
+
 		fun syncTTSPoint() {
 			ttsPoint = if (chapters.size > 0) {
 				val chapter = chapters[readChapter]
@@ -332,7 +372,7 @@ class App : Application() {
 		private const val RULE2 = "[0-9]+"
 		private const val RULE3 = "[零一二三四五六七八九十百千万]+"
 		private const val RULE4 = "卷\\s*[0-9零一二三四五六七八九十百千万]+"
-		private const val RULE5 = "前言|主?目录|序章?|引子|返回主?目录"
+		private const val RULE5 = "前言|主?目录|序[章幕]?|[引楔]子|返回主?目录"
 		private const val RULE6 = "Chapter\\s+[0-9]+"
 		private const val SUFFIX = "(?:[、\\s]+\\S+|\\s*$)"
 		const val TOPIC_RULE = "$PREFIX(?:$RULE1|$RULE2|$RULE3|$RULE4|$RULE5|$RULE6)$SUFFIX"
