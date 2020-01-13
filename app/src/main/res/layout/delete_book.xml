@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:gravity="center_horizontal|center_vertical"
+	android:paddingLeft="0dp"
+	android:paddingTop="10dp"
+	android:paddingRight="0dp"
+	android:paddingBottom="10dp">
+
+	<Button
+		android:id="@+id/removeFromList"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_margin="10dp"
+		android:background="@drawable/book_menu_button_bg"
+		android:drawableTop="@drawable/ic_delete_sweep_white_24dp"
+		android:drawablePadding="10dp"
+		android:minWidth="100dp"
+		android:padding="20dp"
+		android:singleLine="true"
+		android:text="移出书架"
+		android:textColor="@color/colorWhite" />
+
+	<Button
+		android:id="@+id/deleteCompletely"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_margin="10dp"
+		android:background="@drawable/book_menu_button_bg"
+		android:drawableTop="@drawable/ic_delete_forever_white_24dp"
+		android:drawablePadding="10dp"
+		android:minWidth="100dp"
+		android:padding="20dp"
+		android:singleLine="true"
+		android:text="彻底删除"
+		android:textColor="@color/colorWhite" />
+</LinearLayout>

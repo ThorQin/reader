@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import android.view.View
+import android.widget.Button
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import com.github.thorqin.reader.App
@@ -30,8 +31,28 @@ class BookManager(private var activity: MainActivity) {
 	private var bookAdapter: BookListAdapter
 	init {
 		bookAdapter = BookListAdapter(activity) {
-			app.removeBook(it)
-			showFiles()
+
+			val rootView = View.inflate(activity, R.layout.delete_book, null)
+			val removeButton = rootView.findViewById<Button>(R.id.removeFromList)
+			val deleteButton = rootView.findViewById<Button>(R.id.deleteCompletely)
+			val dialog = AlertDialog.Builder(activity, R.style.dialogStyle)
+				.setView(rootView)
+				.setCancelable(true)
+				.create()
+
+			removeButton.setOnClickListener { _ ->
+				dialog.hide()
+				app.removeBook(it)
+				showFiles()
+			}
+			deleteButton.setOnClickListener { _ ->
+				dialog.hide()
+				app.deleteBook(it)
+				showFiles()
+			}
+
+			dialog.show()
+
 		}
 		activity.fileList.adapter = bookAdapter
 	}

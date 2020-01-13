@@ -72,10 +72,15 @@ class BookListAdapter(
 	override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
 		val item = data!![position]
 		val view: SwipeRevealLayout = if (convertView != null) {
-			convertView as SwipeRevealLayout
+			if (convertView.tag == item.key) {
+				convertView as SwipeRevealLayout
+			} else {
+				inflater.inflate(R.layout.book_item, null) as SwipeRevealLayout
+			}
 		} else {
 			inflater.inflate(R.layout.book_item, null) as SwipeRevealLayout
 		}
+//		val view = inflater.inflate(R.layout.book_item, null) as SwipeRevealLayout
 		view.close(false)
 		view.setSwipeListener(swipeListener)
 		val bookItem = view.findViewById(R.id.bookItem) as View
@@ -90,6 +95,9 @@ class BookListAdapter(
 			onDeleteItem(item.key)
 		}
 		view.tag = item.key
+//		view.visibility = View.GONE
+//		view.visibility = View.VISIBLE
+//			view.requestLayout()
 		return view
 	}
 

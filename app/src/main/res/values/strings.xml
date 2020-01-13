@@ -42,7 +42,7 @@
 	<string name="reset">RESET</string>
 	<string name="upload_book">Upload Book</string>
 	<string name="about">About</string>
-	<string name="about_me">\nVersion: %1$s\nAuthor: Thor Qin \nEmail: thor.qin@qq.com\n</string>
+	<string name="about_me">\nVersion: %1$s\n</string>
 	<string name="confirm_to_clear">Empty bookshelf will cause clear all reading progress info, are you sure?</string>
 	<string name="need_wifi">Please connect WIFI to upload!</string>
 	<string name="use_browser">Please use PC browser to open：\nhttp://%1$s:%2$d</string>

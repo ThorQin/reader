@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
 	private lateinit var handler: Handler
 
 	private lateinit var updateManager: UpdateManager
-	private lateinit var feedbackManager: FeedbackManager
+
 	private lateinit var bookManager: BookManager
 
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,13 +49,17 @@ class MainActivity : AppCompatActivity() {
 
 		handler = Handler(Looper.getMainLooper())
 		updateManager = UpdateManager(this)
-		feedbackManager = FeedbackManager(this)
 		bookManager = BookManager(this)
 
-		if (app.config.lastRead != null && app.config.files.containsKey(app.config.lastRead!!)) {
-			val intent = Intent(this, BookActivity::class.java)
-			intent.putExtra("key", app.config.lastRead)
-			startActivityForResult(intent, REQUEST_OPEN_BOOK)
+		val openView = intent.getStringExtra("openView")
+		if (openView == "community") {
+			showCommunity()
+		} else {
+			if (app.config.lastRead != null && app.config.files.containsKey(app.config.lastRead!!)) {
+				val intent = Intent(this, BookActivity::class.java)
+				intent.putExtra("key", app.config.lastRead)
+				startActivityForResult(intent, REQUEST_OPEN_BOOK)
+			}
 		}
 
 		searchButton.setOnClickListener {
@@ -70,6 +74,11 @@ class MainActivity : AppCompatActivity() {
 		val op = intent?.getStringExtra("op")
 		if (op == "searchLocal") {
 			bookManager.searchBooks()
+		} else {
+			val openView = intent?.getStringExtra("openView")
+			if (openView == "community") {
+				showCommunity()
+			}
 		}
 	}
 
@@ -103,10 +112,7 @@ class MainActivity : AppCompatActivity() {
 				showAbout()
 				true
 			}
-			R.id.feedback -> {
-				feedbackManager.showFeedback()
-				true
-			}
+
 			R.id.interchange -> {
 				showCommunity()
 				true

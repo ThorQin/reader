@@ -7,26 +7,21 @@
 	app:dragEdge="right"
 	app:mode="same_level">
 
-	<FrameLayout
+	<TextView
 		android:id="@+id/delete_book"
-		android:layout_width="wrap_content"
+		android:layout_width="80dp"
 		android:layout_height="match_parent"
+		android:layout_gravity="center|center_vertical|fill_vertical"
 		android:background="@color/colorAccent"
-		android:clickable="true"
-		>
-		<TextView
-			android:layout_gravity="center"
-			android:layout_width="80dp"
-			android:layout_height="match_parent"
-			android:textColor="@color/colorWhite"
-			android:textAlignment="center"
-			android:text="@string/delete_item"/>
-	</FrameLayout>
+		android:gravity="center_vertical"
+		android:text="@string/delete_item"
+		android:textAlignment="center"
+		android:textColor="@color/colorWhite" />
 
 	<LinearLayout
 		android:id="@+id/bookItem"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"
+		android:layout_height="wrap_content"
 		android:background="@drawable/book_item_bg"
 		android:clickable="true"
 		android:gravity="center_vertical"
@@ -51,6 +46,7 @@
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:maxLines="2"
+				android:ellipsize="end"
 				android:textColor="#CCCCCC"
 				android:textSize="10pt" />
 

@@ -15,6 +15,7 @@ import java.lang.Exception
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.text.Collator
+import java.time.LocalDateTime
 import java.util.*
 import java.util.regex.Pattern
 import java.util.zip.ZipInputStream
@@ -192,7 +193,8 @@ class App : Application() {
 				file.inputStream().use {
 					it.reader(Charset.forName(encoding)).use { it1 ->
 						it1.skip(chapter.startPoint)
-						val buffer = CharArray((chapter.endPoint - chapter.startPoint).toInt())
+						val bufferSize = (chapter.endPoint - chapter.startPoint).toInt().coerceAtMost(3000)
+						val buffer = CharArray(bufferSize)
 						val size = it1.read(buffer)
 						val content = String(buffer, 0, size).trim()
 						if (!content.isNullOrEmpty()) {
@@ -204,7 +206,7 @@ class App : Application() {
 			val s = sb.toString()
 			val summaryPattern = Pattern.compile("(?:序[章幕]?|前言|引子|简介|契子)\\s*\\n((?:.|\\n)+)$", Pattern.MULTILINE)
 			val m = summaryPattern.matcher(s)
-			return if (m.find()) {
+			val result = if (m.find()) {
 				val c = m.group(1)
 				val p = Pattern.compile(TOPIC_RULE, Pattern.CASE_INSENSITIVE)
 				val mEnd = p.matcher(c)
@@ -216,6 +218,7 @@ class App : Application() {
 			} else {
 				s
 			}
+			return result.substring(0, result.length.coerceAtMost(3000))
 		}
 
 		fun syncTTSPoint() {
@@ -321,11 +324,7 @@ class App : Application() {
 				} else {
 					0f
 				}
-				return if (totalLength < 10486) {
-					"大小：${(totalLength.toDouble() / 1024 * 100).roundToInt() / 100.0}K  阅读：$p%"
-				} else {
-					"大小：${(totalLength.toDouble() / 1024 / 1024 * 100).roundToInt() / 100.0}M  阅读：$p%"
-				}
+				return "大小：${(totalLength.toDouble() / 1024 / 1024 * 100).roundToInt() / 100.0}M  阅读：$p%"
 			}
 	}
 
@@ -439,6 +438,9 @@ class App : Application() {
 
 	lateinit var config: AppConfig
 
+	var mainPage: String? = null
+	var configTime: Date? = null
+
 	override fun onCreate() {
 		super.onCreate()
 		config = load()
@@ -519,7 +521,45 @@ class App : Application() {
 		if (path.exists()) {
 			path.delete()
 		}
+		val indexPath = filesDir.resolve("books").resolve("$key-chapters.json")
+		if (indexPath.isFile) {
+			indexPath.delete()
+		}
 		saveConfig()
+	}
+
+	fun deleteBook(key: String) {
+		try {
+			val summary = config.files[key]
+			if (summary != null) {
+				val bookFile = File(summary.path)
+				if (bookFile.extension == "text") {
+					val epubFile = bookFile.parentFile.resolve(bookFile.nameWithoutExtension + ".epub")
+					if (epubFile.isFile) {
+						epubFile.delete()
+					}
+				} else if (bookFile.extension == "epub") {
+					val textFile = bookFile.parentFile.resolve(bookFile.nameWithoutExtension + ".text")
+					if (textFile.isFile) {
+						textFile.delete()
+					}
+				}
+				if (bookFile.isFile) {
+					 bookFile.delete()
+				}
+				val stateFile = filesDir.resolve("books").resolve("$key.json")
+				if (stateFile.isFile) {
+					stateFile.delete()
+				}
+				val indexPath = filesDir.resolve("books").resolve("$key-chapters.json")
+				if (indexPath.isFile) {
+					indexPath.delete()
+				}
+			}
+			config.files.remove(key)
+		} catch (e: Exception) {
+			toast(this,"删除错误！")
+		}
 	}
 
 	fun clearBook() {

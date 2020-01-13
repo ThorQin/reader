@@ -21,7 +21,10 @@
 		android:supportsRtl="true"
 		android:theme="@style/AppTheme"
 		tools:ignore="GoogleAppIndexingWarning">
-		<activity android:name=".activities.community.CommunityActivity"></activity>
+		<activity android:name=".activities.community.CommunityActivity"
+			android:screenOrientation="portrait">
+
+		</activity>
 
 		<service
 			android:name=".services.TTSService"
@@ -37,7 +40,8 @@
 				android:resource="@xml/provider_paths" />
 		</provider>
 
-		<activity android:name=".activities.wifi.UploadActivity" />
+		<activity android:name=".activities.wifi.UploadActivity"
+			android:screenOrientation="portrait" />
 		<activity
 			android:name=".activities.start.LaunchScreenActivity"
 			android:theme="@style/TranslucentTheme">
@@ -46,6 +50,14 @@
 
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
+
+			<intent-filter>
+				<data android:scheme="ereader" />
+				<category android:name="android.intent.category.DEFAULT"/>
+				<action android:name="android.intent.action.VIEW"/>
+				<category android:name="android.intent.category.BROWSABLE"/>
+			</intent-filter>
+
 		</activity>
 		<activity
 			android:name=".activities.main.MainActivity"

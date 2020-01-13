@@ -5,6 +5,7 @@
 	<color name="colorPrimaryDark">#00574B</color>
 	<color name="colorAccent">#D81B60</color>
 	<color name="colorAccentDark">#A00040</color>
+	<color name="colorWorkspaceDark">#333333</color>
 	<color name="colorWorkspace">#555555</color>
 	<color name="colorWorkspaceHighlight">#888888</color>
 	<color name="colorBlack">#000000</color>
