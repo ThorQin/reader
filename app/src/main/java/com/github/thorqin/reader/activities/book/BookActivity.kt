@@ -1386,34 +1386,41 @@ class BookActivity : AppCompatActivity() {
 
 
 	private fun queryWordDefinition(txt: List<String>, success: (result: List<Dict>) -> Unit, error: (msg: String) -> Unit) {
-		var url = "http://138.91.1.176:8080/dict"
-		for ((i,s) in txt.withIndex()) {
-			url += if (i == 0) {
-				"?"
-			} else {
-				"&"
+		//var url = "http://138.91.1.176:8080/public/dict"
+
+		app.getWebSiteURL({
+			var url = "${it}public/dict"
+			for ((i,s) in txt.withIndex()) {
+				url += if (i == 0) {
+					"?"
+				} else {
+					"&"
+				}
+				val word = URLEncoder.encode(s, "utf-8")
+				url += "q=$word"
 			}
-			val word = URLEncoder.encode(s, "utf-8")
-			url += "q=$word"
-		}
-		val listType = makeListType(Dict::class.java)
-		val request = AsyncHttpGet(url)
-		AsyncHttpClient.getDefaultInstance().executeString(request,
-			object:AsyncHttpClient.StringCallback() {
-				override fun onCompleted(e: Exception?, response: AsyncHttpResponse?, result: String?) {
-					if (e != null) {
-						runOnUiThread {
-							error(e.message ?: "网络错误!")
+			val listType = makeListType(Dict::class.java)
+			val request = AsyncHttpGet(url)
+			val client = AsyncHttpClient.getDefaultInstance()
+			client.executeString(request,
+				object:AsyncHttpClient.StringCallback() {
+					override fun onCompleted(e: Exception?, response: AsyncHttpResponse?, result: String?) {
+						if (e != null) {
+							runOnUiThread {
+								error(e.message ?: "服务暂时不可用!")
+							}
+							return
 						}
-						return
-					}
-					val list = json().fromJson(result, listType) as List<Dict>
-					runOnUiThread {
-						success(list)
+						val list = json().fromJson(result, listType) as List<Dict>
+						runOnUiThread {
+							success(list)
+						}
 					}
 				}
-			}
-		)
+			)
+		}, {
+			error("服务暂时不可用！")
+		})
 	}
 
 	private fun explain(txt: List<String>) {

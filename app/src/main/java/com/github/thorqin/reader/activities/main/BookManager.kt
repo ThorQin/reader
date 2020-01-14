@@ -25,6 +25,7 @@ class BookManager(private var activity: MainActivity) {
 
 	companion object {
 		val TEXT_FILE = Regex(".+\\.(txt|epub)$", RegexOption.IGNORE_CASE)
+		val IGNORE_FILE = Regex("^(trace|(.+(\\s+|\\.))?log|output|readme)\\..+$", RegexOption.IGNORE_CASE)
 		const val MIN_FILE_SIZE = 1024 * 200
 	}
 
@@ -93,8 +94,11 @@ class BookManager(private var activity: MainActivity) {
 					searchPath(f, found, level + 1)
 				}
 			} else if (TEXT_FILE.matches(f.name)) {
-				if (f.length() >= MIN_FILE_SIZE)
-					found.add(f)
+				if (!IGNORE_FILE.matches(f.name)) {
+					if (f.length() >= MIN_FILE_SIZE) {
+						found.add(f)
+					}
+				}
 			}
 		}
 	}

@@ -193,7 +193,8 @@ class AppInfo (
 )
 
 fun getAppInfo(success: (appInfo: AppInfo?) -> Unit, error: (msg: String) -> Unit ) {
-	val url = "http://thor.qin.gitee.io/ereader-web/version.json"
+	// val url = "http://thor.qin.gitee.io/ereader-web/version.json"
+	val url = "https://gitee.com/thor.qin/EReader-Web/raw/master/version.json"
 	httpGet(url, AppInfo::class.java, success, error)
 }
 

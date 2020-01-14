@@ -4,6 +4,8 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.View
@@ -46,6 +48,7 @@ class CommunityActivity : AppCompatActivity() {
 			return application as App
 		}
 
+	private lateinit var handler: Handler
 	private lateinit var mainPage: String
 
 	private lateinit var progressDialog: ProgressDialog
@@ -53,6 +56,7 @@ class CommunityActivity : AppCompatActivity() {
 //	val handler = Handler(Looper.getMainLooper())
 
 	companion object {
+
 		val inject = """
 			(function() {
 				"use strict";
@@ -103,7 +107,14 @@ class CommunityActivity : AppCompatActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+
+		handler = Handler(Looper.getMainLooper())
+
+		val useDebug = app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE > 0
+		WebView.setWebContentsDebuggingEnabled(useDebug)
+
 		setContentView(R.layout.activity_community)
+		webView.visibility = View.GONE
 		webView.settings.allowFileAccess = true
 		webView.settings.allowContentAccess = true
 		webView.settings.allowFileAccessFromFileURLs = true
@@ -206,6 +217,8 @@ class CommunityActivity : AppCompatActivity() {
 						val cookie = CookieManager.getInstance().getCookie(mainPage)
 						val boundary = "ERBoundary" + UUID.randomUUID().toString().replace(Regex("-"), "").toLowerCase()
 						val conn = URL(uploadURL).openConnection() as HttpURLConnection
+						conn.connectTimeout = 15000
+						conn.readTimeout = 15000
 						conn.doOutput = true
 						conn.doInput = true
 						conn.useCaches = false
@@ -301,6 +314,8 @@ class CommunityActivity : AppCompatActivity() {
 								downloadURL += "api/book/download?id=${info.id}"
 								val cookie = CookieManager.getInstance().getCookie(mainPage)
 								val conn = URL(downloadURL).openConnection() as HttpURLConnection
+								conn.connectTimeout = 15000
+								conn.readTimeout = 15000
 								conn.doOutput = false
 								conn.doInput = true
 								conn.useCaches = false
@@ -336,6 +351,9 @@ class CommunityActivity : AppCompatActivity() {
 									json().toJson(DownloadResult(false, conn.responseMessage))
 								}
 							} catch (e: Throwable) {
+								if (file.isFile) {
+									file.delete()
+								}
 								json().toJson(DownloadResult(false, e.message ?: "下载失败！"))
 							} finally {
 								runOnUiThread {
@@ -365,9 +383,13 @@ class CommunityActivity : AppCompatActivity() {
 //			}
 		}
 		webView.webViewClient = object: WebViewClient() {
-//			override fun onPageFinished(view: WebView?, url: String?) {
-//				super.onPageFinished(view, url)
-//			}
+			override fun onPageFinished(view: WebView?, url: String?) {
+				super.onPageFinished(view, url)
+
+				handler.postDelayed({
+					webView.visibility = View.VISIBLE
+				}, 200)
+			}
 
 			override fun onReceivedError(
 				view: WebView?,
@@ -376,7 +398,8 @@ class CommunityActivity : AppCompatActivity() {
 			) {
 				super.onReceivedError(view, request, error)
 				if (request?.url.toString() == mainPage) {
-					webView.evaluateJavascript(showError) {}
+					webView.loadUrl("res://error.html")
+//					webView.evaluateJavascript(showError) {}
 				}
 			}
 
@@ -400,32 +423,17 @@ class CommunityActivity : AppCompatActivity() {
 			}
 		}
 
-		if (app.mainPage == null || (Date().time - app.configTime!!.time) > 86400000) {
-			getAppInfo({
-				runOnUiThread {
-					mainPage = if (it?.webSite == null) {
-						if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE > 0) {
-							"http://192.168.1.5:8080/"
-						} else {
-							"res://error.html"
-						}
-					} else it.webSite
-					if (mainPage != "res://error.html") {
-						app.mainPage = mainPage
-						app.configTime = Date()
-					}
-					webView.loadUrl(mainPage)
-				}
-			}, {
-				runOnUiThread {
-					webView.loadUrl("res://error.html")
-					App.toast(this, "网络图书暂不可用!")
-				}
-			})
-		} else {
-			mainPage = app.mainPage!!
-			webView.loadUrl(app.mainPage)
-		}
+		app.getWebSiteURL({
+			mainPage = it
+			runOnUiThread {
+				webView.loadUrl(it)
+			}
+		}, {
+			runOnUiThread {
+				webView.loadUrl("res://error.html")
+				App.toast(this, "网络图书暂不可用!")
+			}
+		})
 	}
 
 

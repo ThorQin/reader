@@ -92,6 +92,7 @@ class BookListAdapter(
 		descText.text = item.desc
 		val btnDelete = view.findViewById(R.id.delete_book) as View
 		btnDelete.setOnClickListener {
+			view.close(true)
 			onDeleteItem(item.key)
 		}
 		view.tag = item.key

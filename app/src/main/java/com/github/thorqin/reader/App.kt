@@ -4,18 +4,15 @@ package com.github.thorqin.reader
 import android.app.AlertDialog
 import android.app.Application
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.widget.Toast
-import com.github.thorqin.reader.utils.json
-import com.github.thorqin.reader.utils.Skip
-import com.github.thorqin.reader.utils.hexString
-import com.github.thorqin.reader.utils.makeListType
+import com.github.thorqin.reader.utils.*
 import org.apache.commons.io.FileUtils
 import java.io.*
 import java.lang.Exception
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.text.Collator
-import java.time.LocalDateTime
 import java.util.*
 import java.util.regex.Pattern
 import java.util.zip.ZipInputStream
@@ -623,6 +620,31 @@ class App : Application() {
 			 phraseSet!!.contains(s)
 		} catch(e: Throwable) {
 			false
+		}
+	}
+
+	fun getWebSiteURL(success: (url: String) -> Unit, fail: () -> Unit) {
+		if (mainPage == null || (Date().time - configTime!!.time) > 86400000) {
+			getAppInfo({
+				if (it?.webSite == null) {
+					if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE > 0) {
+						mainPage = "http://192.168.1.5:8080/"
+						configTime = Date()
+						success("http://192.168.1.5:8080/")
+					} else {
+						fail()
+					}
+				} else {
+					val url = if (it.webSite.endsWith("/")) it.webSite else it.webSite + "/"
+					mainPage = url // "http://192.168.1.5:8080/" // url
+					configTime = Date()
+					success(url)
+				}
+			}, {
+				fail()
+			})
+		} else {
+			success(mainPage!!)
 		}
 	}
 
