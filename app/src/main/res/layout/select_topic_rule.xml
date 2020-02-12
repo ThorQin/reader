@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+	<ListView
+		android:id="@+id/listBox"
+		android:layout_width="match_parent"
+		android:layout_weight="1"
+		android:layout_height="0dp" />
+
+	<com.github.thorqin.reader.component.CenterButton
+		android:id="@+id/addButton"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@drawable/book_menu_button_bg"
+		android:drawableStart="@drawable/ic_add_black_24dp"
+		android:drawablePadding="20dp"
+		android:textColor="@color/colorWhite"
+		android:gravity="center"
+		android:adjustViewBounds="true"
+		android:text="@string/button_add" />
+</LinearLayout>

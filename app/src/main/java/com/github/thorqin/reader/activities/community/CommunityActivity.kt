@@ -19,7 +19,6 @@ import com.github.thorqin.reader.R
 import com.github.thorqin.reader.activities.main.MainActivity
 import com.github.thorqin.reader.activities.main.REQUEST_OPEN_UPLOAD
 import com.github.thorqin.reader.activities.wifi.UploadActivity
-import com.github.thorqin.reader.utils.getAppInfo
 import com.github.thorqin.reader.utils.json
 import kotlinx.android.synthetic.main.activity_community.*
 import java.io.File
@@ -57,32 +56,6 @@ class CommunityActivity : AppCompatActivity() {
 
 	companion object {
 
-		val inject = """
-			(function() {
-				"use strict";
-				try {
-					let parent = document.getElementsByTagName('head')[0] || document.body || document.documentElement;
-					let s = document.createElement('style');
-					s.innerHTML = `
-						body {
-							color: #ccc;
-						}
-					`;
-					parent.insertBefore(s, parent.firstChild);
-					console.log(document.documentElement.innerHTML);
-				} catch (e) {
-					console.error(e)
-				}
-			})()
-		""".trimIndent()
-
-		val showError = """
-			(function() {
-				"use strict";
-				window.location.replace('res://error.html')
-			})()
-		""".trimIndent()
-
 		val fileMap = hashMapOf(
 			"js" to "application/javascript",
 			"css" to "text/css",
@@ -114,6 +87,10 @@ class CommunityActivity : AppCompatActivity() {
 		WebView.setWebContentsDebuggingEnabled(useDebug)
 
 		setContentView(R.layout.activity_community)
+
+		val cookieManager = CookieManager.getInstance()
+		cookieManager.setAcceptCookie(true)
+
 		webView.visibility = View.GONE
 		webView.settings.allowFileAccess = true
 		webView.settings.allowContentAccess = true

@@ -54,4 +54,5 @@
 	<string name="no_explanation_found">No explanation found!</string>
 	<string name="use_volume_button_to_flip">Use Volume Button to Flip</string>
 	<string name="feedback">Feedback</string>
+	<string name="button_add">Add New Rule</string>
 </resources>

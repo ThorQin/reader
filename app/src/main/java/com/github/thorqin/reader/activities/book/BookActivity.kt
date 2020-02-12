@@ -20,6 +20,7 @@ import android.view.View.*
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.children
 import androidx.drawerlayout.widget.DrawerLayout
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.activities.setting.SettingsActivity
@@ -1006,7 +1007,7 @@ class BookActivity : AppCompatActivity() {
 			var scan = 0L
 			var lineEnd = true
 			var beginChapter = true
-			val fileInfo: App.FileDetail = App.FileDetail()
+			val fileInfo: App.FileDetail = app.newDetail()
 			fileInfo.encoding = charset
 			fileInfo.name = bookName
 			fileInfo.fontSize = app.config.fontSize
@@ -1159,12 +1160,16 @@ class BookActivity : AppCompatActivity() {
 	}
 
 	private fun initBook(width: Int, height: Int) {
-		val topicRule = if (!::fileInfo.isInitialized || fileInfo.topicRule == null) App.TOPIC_RULE else fileInfo.topicRule!!
+		var topicRules: List<String>? = null
+		val topicRule = if (!::fileInfo.isInitialized) App.getTopicRule() else {
+			topicRules = fileInfo.topicRules
+			fileInfo.getTopicRule()
+		}
 		bufferView.textSize = app.config.fontSize.value
 		val pattern: Pattern = try {
 			Pattern.compile(topicRule.replace(Regex("\\s+"), ""), Pattern.CASE_INSENSITIVE)
 		} catch (e: Exception) {
-			Pattern.compile(App.TOPIC_RULE, Pattern.CASE_INSENSITIVE)
+			Pattern.compile(App.getTopicRule(), Pattern.CASE_INSENSITIVE)
 		}
 		try {
 			var txtFilePath = summary.path
@@ -1194,7 +1199,7 @@ class BookActivity : AppCompatActivity() {
 			}
 
 			fileInfo = parseFile(file, pattern, bookName)
-			fileInfo.topicRule = topicRule
+			fileInfo.topicRules = topicRules
 			app.config.lastRead = summary.key
 			fileInfo.key = summary.key
 			fileInfo.path = txtFilePath
@@ -1309,7 +1314,8 @@ class BookActivity : AppCompatActivity() {
 		}
 	}
 
-	private fun inputTopicRule() {
+
+	private fun addNewRule(onSuccess: (rule: String) -> Unit) {
 		val layout = inflate(this, R.layout.input_dialog, null)
 		val et = layout.findViewById<EditText>(R.id.editText)
 		val msg = layout.findViewById<TextView>(R.id.errText)
@@ -1328,13 +1334,12 @@ class BookActivity : AppCompatActivity() {
 			}
 
 		})
-
-		et.setText(if (fileInfo.topicRule == null) App.TOPIC_RULE else fileInfo.topicRule!!)
+//
+//		et.setText(if (fileInfo.topicRule == null) App.TOPIC_RULE else fileInfo.topicRule!!)
 		val dialog = AlertDialog.Builder(this, R.style.dialogStyle).setTitle(getString(R.string.topic_rule))
 			.setView(layout)
 			.setPositiveButton(getString(R.string.ok), null)
 			.setNegativeButton(getString(R.string.cancel), null)
-			.setNeutralButton(getString(R.string.reset), null)
 			.setCancelable(false)
 			.create()
 		dialog.setOnShowListener {
@@ -1347,22 +1352,186 @@ class BookActivity : AppCompatActivity() {
 				} else {
 					try {
 						Pattern.compile(input)
-						fileInfo.topicRule = input
 						dialog.dismiss()
-						handler.postDelayed({
-							initBook(bufferView.width, bufferView.height)
-						}, 50)
+
+						onSuccess(input)
+
 					} catch (e: Exception) {
 						msg.visibility = VISIBLE
 					}
 				}
 			}
+		}
+		dialog.show()
+	}
+
+	private fun inputTopicRule() {
+
+		class Rule(var rule: String, var selected: Boolean)
+
+
+		val layout = inflate(this, R.layout.select_topic_rule, null)
+		val listBox = layout.findViewById<ListView>(R.id.listBox)
+
+		fun getCurrentRules(): MutableList<Rule> {
+			val rs = App.RULES.map {
+				Rule(it, true)
+			}.toMutableList()
+
+			if (fileInfo.topicRules != null) {
+				rs.forEach {
+					it.selected = false
+				}
+				fileInfo.topicRules!!.forEach {
+					if (rs.none { r ->
+							if (r.rule == it) {
+								r.selected = true
+								true
+							} else {
+								false
+							}
+						}) {
+						rs.add(Rule(it, true))
+					}
+				}
+			}
+			return rs
+		}
+		var rules = getCurrentRules()
+
+		val adapter = object: BaseAdapter() {
+			private val inflater: LayoutInflater = LayoutInflater.from(this@BookActivity)
+			override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+				val checkbox = inflater.inflate(R.layout.topic_rule_item, null) as CheckBox
+				checkbox.text = rules[position].rule
+				checkbox.isChecked = rules[position].selected
+				checkbox.tag = rules[position]
+				checkbox.setOnClickListener {
+					val item = it.tag as Rule
+					item.selected = it.isSelected
+				}
+				return checkbox
+			}
+
+			override fun getItem(position: Int): Any {
+				return rules[position]
+			}
+
+			override fun getItemId(position: Int): Long {
+				return position.toLong()
+			}
+
+			override fun getCount(): Int {
+				return rules.size
+			}
+
+		}
+		listBox.adapter = adapter
+
+		val addButton = layout.findViewById<Button>(R.id.addButton)
+		addButton.setOnClickListener {
+			addNewRule {
+				if (rules.none {r ->
+						if (r.rule == it) {
+							r.selected = true
+							true
+						} else {
+							false
+						}
+					}) {
+					rules.add(Rule(it, true))
+				}
+				adapter.notifyDataSetChanged()
+				handler.post {
+					listBox.setSelection(listBox.bottom)
+				}
+			}
+		}
+
+		val dialog = AlertDialog.Builder(this, R.style.dialogStyle).setTitle(getString(R.string.topic_rule))
+			.setView(layout)
+			.setPositiveButton(getString(R.string.ok), null)
+			.setNegativeButton(getString(R.string.cancel), null)
+			.setNeutralButton(getString(R.string.reset), null)
+			.setCancelable(false)
+			.create()
+
+		dialog.setOnShowListener {
+			it as AlertDialog
+			val button = it.getButton(AlertDialog.BUTTON_POSITIVE)
+			button.setOnClickListener {
+				fileInfo.topicRules = rules.filter { r ->
+					r.selected
+				}.map {r ->
+					r.rule
+				}
+				dialog.dismiss()
+				handler.postDelayed({
+					initBook(bufferView.width, bufferView.height)
+				}, 50)
+			}
 			val resetButton = it.getButton(AlertDialog.BUTTON_NEUTRAL)
 			resetButton.setOnClickListener {
-				et.setText(App.TOPIC_RULE)
+				rules = App.RULES.map {
+					Rule(it, true)
+				}.toMutableList()
+				adapter.notifyDataSetChanged()
 			}
 		}
 		dialog.show()
+//		val layout = inflate(this, R.layout.input_dialog, null)
+//		val et = layout.findViewById<EditText>(R.id.editText)
+//		val msg = layout.findViewById<TextView>(R.id.errText)
+//
+//		et.addTextChangedListener(object: TextWatcher {
+//			override fun afterTextChanged(s: Editable?) {
+//				msg.visibility = GONE
+//			}
+//
+//			override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+//
+//			}
+//
+//			override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+//
+//			}
+//
+//		})
+//
+//		et.setText(if (fileInfo.topicRule == null) App.TOPIC_RULE else fileInfo.topicRule!!)
+//		val dialog = AlertDialog.Builder(this, R.style.dialogStyle).setTitle(getString(R.string.topic_rule))
+//			.setView(layout)
+//			.setPositiveButton(getString(R.string.ok), null)
+//			.setNegativeButton(getString(R.string.cancel), null)
+//			.setNeutralButton(getString(R.string.reset), null)
+//			.setCancelable(false)
+//			.create()
+//		dialog.setOnShowListener {
+//			it as AlertDialog
+//			val button = it.getButton(AlertDialog.BUTTON_POSITIVE)
+//			button.setOnClickListener {
+//				val input = et.text.toString()
+//				if (input.trim() == "") {
+//					msg.visibility = VISIBLE
+//				} else {
+//					try {
+//						Pattern.compile(input)
+//						fileInfo.topicRule = input
+//						dialog.dismiss()
+//						handler.postDelayed({
+//							initBook(bufferView.width, bufferView.height)
+//						}, 50)
+//					} catch (e: Exception) {
+//						msg.visibility = VISIBLE
+//					}
+//				}
+//			}
+//			val resetButton = it.getButton(AlertDialog.BUTTON_NEUTRAL)
+//			resetButton.setOnClickListener {
+//				et.setText(App.TOPIC_RULE)
+//			}
+//		}
+//		dialog.show()
 	}
 
 	private class Dict {

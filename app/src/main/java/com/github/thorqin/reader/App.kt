@@ -60,10 +60,10 @@ class App : Application() {
 		var ttsPoint = 0L
 		var screenWidth = 0
 		var screenHeight = 0
-		var topicRule: String? = null
+		var topicRules: List<String>? = null
 	}
 
-	class FileDetail : FileState() {
+	inner class FileDetail : FileState() {
 		@Skip
 		var chapters = ArrayList<Chapter>()
 
@@ -84,7 +84,11 @@ class App : Application() {
 				return json().toJson(chapterStore)
 			}
 			set(json) {
-				chapters.clear()
+				if (chapters == null) {
+					chapters = arrayListOf()
+				} else {
+					chapters.clear()
+				}
 				val store =
 					json().fromJson(json, makeListType(ChapterStore::class.java)) as List<ChapterStore>
 				for (i in 0 until store.size) {
@@ -104,6 +108,16 @@ class App : Application() {
 					chapters.add(c)
 				}
 			}
+
+		fun getTopicRule(): String {
+			val rules = if (this.topicRules == null) {
+				RULES
+			} else {
+				this.topicRules!!
+			}
+			val r = rules.joinToString("|")
+			return "$PREFIX(?:$r)$SUFFIX"
+		}
 
 		fun setNewReadPage(value: Int) {
 			if (value in 0 until totalPages) {
@@ -201,11 +215,11 @@ class App : Application() {
 				}
 			}
 			val s = sb.toString()
-			val summaryPattern = Pattern.compile("(?:序[章幕]?|前言|引子|简介|契子)\\s*\\n((?:.|\\n)+)$", Pattern.MULTILINE)
+			val summaryPattern = Pattern.compile("(?:序[章幕]?|前言|引子?|(?:内容)?简介|契子)\\s*\\n((?:.|\\n)+)$", Pattern.MULTILINE)
 			val m = summaryPattern.matcher(s)
 			val result = if (m.find()) {
 				val c = m.group(1)
-				val p = Pattern.compile(TOPIC_RULE, Pattern.CASE_INSENSITIVE)
+				val p = Pattern.compile(getTopicRule(), Pattern.CASE_INSENSITIVE)
 				val mEnd = p.matcher(c)
 				if (mEnd.find()) {
 					s.substring(0, mEnd.start())
@@ -228,7 +242,7 @@ class App : Application() {
 			}
 		}
 
-		class SentenceInfo(var sentence: String?, var nextPos: Long)
+		inner class SentenceInfo(var sentence: String?, var nextPos: Long)
 
 		fun setTtsPosition(pos: Long) {
 			ttsPoint = pos
@@ -340,6 +354,7 @@ class App : Application() {
 		var clickToFlip = false
 		var neverLock = false
 		var volumeFlip = false
+		var topicRules: List<String>? = null
 
 		fun getList(): List<FileSummary> {
 			val list = mutableListOf<FileSummary>()
@@ -364,15 +379,24 @@ class App : Application() {
 
 	companion object {
 		private const val PREFIX = "^\\s*"
-		private const val RULE1 = ".*第\\s*[0-9零一二三四五六七八九十百千万]+\\s*[卷章节篇部]"
-		private const val RULE2 = "[0-9]+"
-		private const val RULE3 = "[零一二三四五六七八九十百千万]+"
-		private const val RULE4 = "卷\\s*[0-9零一二三四五六七八九十百千万]+"
-		private const val RULE5 = "前言|主?目录|序[章幕]?|[引楔]子|返回主?目录"
-		private const val RULE6 = "Chapter\\s+[0-9]+"
+		val RULES = listOf(
+			"《[^》]+》",
+			".*第\\s*[0-9０１２３４５６７８９零一二三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]+\\s*[卷章节篇部回讲话]",
+			"[0-9]+",
+			"[０１２３４５６７８９]+",
+			"[零一二三四五六七八九十百千万]+",
+			"[零壹贰叁肆伍陆柒捌玖拾佰仟万]+",
+			"卷\\s*[0-9０１２３４５６７８９零一二三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]+",
+			"前言|主?目录|序[章幕篇]?|引[子言]?|楔子|(内容)?简介|后记|附录?|番外|花絮",
+			"Chapter\\s+[0-9]+"
+		)
 		private const val SUFFIX = "(?:[、\\s]+\\S+|\\s*$)"
-		const val TOPIC_RULE = "$PREFIX(?:$RULE1|$RULE2|$RULE3|$RULE4|$RULE5|$RULE6)$SUFFIX"
+//		const val TOPIC_RULE = "$PREFIX(?:$RULE1|$RULE2|$RULE3|$RULE4|$RULE5|$RULE6)$SUFFIX"
 
+		fun getTopicRule(): String {
+			val r = RULES.joinToString("|")
+			return "$PREFIX(?:$r)$SUFFIX"
+		}
 
 		@JvmStatic
 		fun digest(str: String): String {
@@ -445,7 +469,7 @@ class App : Application() {
 	}
 
 	private fun load(): AppConfig {
-		return try {
+		val c = try {
 			val configContent = FileUtils.readFileToString(
 				filesDir.resolve("config.json"), "utf-8"
 			)
@@ -453,6 +477,14 @@ class App : Application() {
 		} catch (e: Exception) {
 			AppConfig()
 		}
+		if (c.topicRules == null) {
+			c.topicRules = RULES
+		}
+		return c
+	}
+
+	fun newDetail(): FileDetail {
+		return FileDetail()
 	}
 
 	fun saveConfig() {
@@ -624,7 +656,12 @@ class App : Application() {
 	}
 
 	fun getWebSiteURL(success: (url: String) -> Unit, fail: () -> Unit) {
-		if (mainPage == null || (Date().time - configTime!!.time) > 86400000) {
+
+// 		DEBUG
+//		mainPage = "http://192.168.1.5:8080/"
+//		configTime = Date()
+
+		if (mainPage == null || configTime == null || (Date().time - configTime!!.time) > 86400000) {
 			getAppInfo({
 				if (it?.webSite == null) {
 					if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE > 0) {
@@ -636,7 +673,7 @@ class App : Application() {
 					}
 				} else {
 					val url = if (it.webSite.endsWith("/")) it.webSite else it.webSite + "/"
-					mainPage = url // "http://192.168.1.5:8080/" // url
+					mainPage = url
 					configTime = Date()
 					success(url)
 				}

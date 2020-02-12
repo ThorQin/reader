@@ -54,4 +54,5 @@
 	<string name="no_explanation_found">没有找到解释！</string>
 	<string name="use_volume_button_to_flip">使用音量键翻页</string>
 	<string name="feedback">问题反馈</string>
+	<string name="button_add">添加新规则</string>
 </resources>
