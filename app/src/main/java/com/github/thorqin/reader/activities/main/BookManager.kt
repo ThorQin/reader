@@ -26,7 +26,7 @@ class BookManager(private var activity: MainActivity) {
 	companion object {
 		val TEXT_FILE = Regex(".+\\.(txt|epub)$", RegexOption.IGNORE_CASE)
 		val IGNORE_FILE = Regex("^(trace|(.+(\\s+|\\.))?log|output|readme)\\..+$", RegexOption.IGNORE_CASE)
-		const val MIN_FILE_SIZE = 1024 * 200
+		const val MIN_FILE_SIZE = 1024 * 20
 	}
 
 	private var bookAdapter: BookListAdapter
@@ -115,8 +115,7 @@ class BookManager(private var activity: MainActivity) {
 		val found = ArrayList<File>()
 		val thread = Thread {
 			try {
-				@Suppress("DEPRECATION")
-				val p = Environment.getExternalStorageDirectory()
+				val p = app.getExternalRootDir()
 				rootPathLength = p.absolutePath.length
 				if (p.isDirectory) {
 					searchPath(p, found, 0)

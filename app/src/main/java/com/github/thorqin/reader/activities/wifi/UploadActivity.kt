@@ -10,7 +10,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.content.IntentFilter
-import android.os.Environment
 import com.github.thorqin.reader.App
 import com.github.thorqin.reader.utils.json
 import com.github.thorqin.reader.utils.readTextResource
@@ -126,10 +125,8 @@ class UploadActivity : AppCompatActivity() {
 
 	private val bookNamePattern = Regex(".+\\.(txt|epub)$", RegexOption.IGNORE_CASE)
 	private fun init() {
-		@Suppress("DEPRECATION")
-		val extRoot = Environment.getExternalStorageDirectory()
-		val bookRoot = extRoot.resolve("com.github.thorqin.reader")
-		bookRoot.mkdir()
+		val bookRoot = app.getExternalBookRootDir()
+		bookRoot.mkdirs()
 		val self = this
 		server.get("/") { _, response ->
 			val text = readTextResource(self, R.raw.index)
@@ -141,6 +138,7 @@ class UploadActivity : AppCompatActivity() {
 				val body = request.body as MultipartFormDataBody
 				var fileStream : FileOutputStream? = null
 				val uploadFileList = arrayListOf<File>()
+				var errorMessage: String? = null
 				body.setMultipartCallback { part ->
 					if (part.isFile) {
 						val filename = URLDecoder.decode(part.filename, "utf-8")
@@ -152,6 +150,7 @@ class UploadActivity : AppCompatActivity() {
 								fileStream = file.outputStream()
 								uploadFileList.add(file)
 							} catch (e: Exception) {
+								errorMessage = e.message
 								fileStream = null
 							}
 							body.setDataCallback { _, bufferList ->
@@ -160,6 +159,7 @@ class UploadActivity : AppCompatActivity() {
 									println("data: ${bytes.size} ")
 									fileStream?.write(bytes)
 								} catch (e: Exception) {
+									errorMessage = e.message
 									System.err.println("Upload file error: ${e.message}")
 								}
 							}
@@ -182,7 +182,12 @@ class UploadActivity : AppCompatActivity() {
 					}
 					app.saveConfig()
 					println("upload end")
-					response.send("ok")
+					if (errorMessage != null) {
+						response.code(400)
+						response.send("Upload failed: $errorMessage")
+					} else {
+						response.send("ok")
+					}
 				}
 			} else {
 				response.code(400)

@@ -261,6 +261,19 @@ class CommunityActivity : AppCompatActivity() {
 				})
 			}
 
+			private fun ensureRootDir(bookRoot: File): Boolean {
+				return if (bookRoot.exists()) {
+					if (bookRoot.isFile) {
+						bookRoot.delete()
+						bookRoot.mkdirs()
+					} else {
+						true
+					}
+				} else {
+					bookRoot.mkdirs()
+				}
+			}
+
 			@JavascriptInterface
 			fun downloadBook(downloadBookInfo: String, callbackKey: String) {
 				thread(start = true, isDaemon = true, block = {
@@ -270,74 +283,75 @@ class CommunityActivity : AppCompatActivity() {
 					}.count() > 0) {
 						json().toJson(DownloadResult(false, "图书已在书架中！"))
 					} else {
-						@Suppress("DEPRECATION")
-						val extRoot = Environment.getExternalStorageDirectory()
-						val bookRoot = extRoot.resolve("com.github.thorqin.reader")
-						bookRoot.mkdir()
-						val file = bookRoot.resolve("${info.name} - ${info.author}.txt")
-						if (file.isFile) {
-							json().toJson(DownloadResult(false, "图书已在书架中！"))
-						} else {
-							runOnUiThread {
-								showProgress()
-								updateProgress(0f)
-							}
-
-							try {
-								var downloadURL = mainPage
-								if (!downloadURL.endsWith("/")) {
-									downloadURL += "/"
+						val bookRoot = app.getExternalBookRootDir()
+						if (ensureRootDir(bookRoot)) {
+							val file = bookRoot.resolve("${info.name} - ${info.author}.txt")
+							if (file.isFile) {
+								json().toJson(DownloadResult(false, "图书已在书架中！"))
+							} else {
+								runOnUiThread {
+									showProgress()
+									updateProgress(0f)
 								}
-								downloadURL += "api/book/download?id=${info.id}"
-								val cookie = CookieManager.getInstance().getCookie(mainPage)
-								val conn = URL(downloadURL).openConnection() as HttpURLConnection
-								conn.connectTimeout = 15000
-								conn.readTimeout = 15000
-								conn.doOutput = false
-								conn.doInput = true
-								conn.useCaches = false
-								conn.setRequestProperty("Cookie", cookie)
-								if (conn.responseCode == 200) {
-									val buffer = ByteArray(4096)
-									var sum = 0
-									file.outputStream().use {outputStream ->
-										conn.inputStream.use { inputStream ->
-											var size = inputStream.read(buffer, 0, 4096)
-											while (size > 0) {
-												outputStream.write(buffer, 0, size)
-												size = inputStream.read(buffer, 0, 4096)
-												sum += size;
-												val prog = sum / info.size.toFloat()
-												runOnUiThread {
-													updateProgress(prog, "下载中")
+
+								try {
+									var downloadURL = mainPage
+									if (!downloadURL.endsWith("/")) {
+										downloadURL += "/"
+									}
+									downloadURL += "api/book/download?id=${info.id}"
+									val cookie = CookieManager.getInstance().getCookie(mainPage)
+									val conn = URL(downloadURL).openConnection() as HttpURLConnection
+									conn.connectTimeout = 15000
+									conn.readTimeout = 15000
+									conn.doOutput = false
+									conn.doInput = true
+									conn.useCaches = false
+									conn.setRequestProperty("Cookie", cookie)
+									if (conn.responseCode == 200) {
+										val buffer = ByteArray(4096)
+										var sum = 0
+										file.outputStream().use {outputStream ->
+											conn.inputStream.use { inputStream ->
+												var size = inputStream.read(buffer, 0, 4096)
+												while (size > 0) {
+													outputStream.write(buffer, 0, size)
+													size = inputStream.read(buffer, 0, 4096)
+													sum += size;
+													val prog = sum / info.size.toFloat()
+													runOnUiThread {
+														updateProgress(prog, "下载中")
+													}
 												}
 											}
 										}
+										val key = App.digest(file.absolutePath)
+										app.removeBook(key)
+										val fc = App.FileSummary()
+										fc.key = key
+										fc.path = file.absolutePath
+										fc.name = file.nameWithoutExtension
+										fc.totalLength = file.length()
+										app.config.files[key] = fc
+										app.saveConfig()
+										json().toJson(DownloadResult(true, "下载成功！"))
+									} else {
+										json().toJson(DownloadResult(false, conn.responseMessage))
 									}
-									val key = App.digest(file.absolutePath)
-									app.removeBook(key)
-									val fc = App.FileSummary()
-									fc.key = key
-									fc.path = file.absolutePath
-									fc.name = file.nameWithoutExtension
-									fc.totalLength = file.length()
-									app.config.files[key] = fc
-									app.saveConfig()
-									json().toJson(DownloadResult(true, "下载成功！"))
-								} else {
-									json().toJson(DownloadResult(false, conn.responseMessage))
-								}
-							} catch (e: Throwable) {
-								if (file.isFile) {
-									file.delete()
-								}
-								json().toJson(DownloadResult(false, e.message ?: "下载失败！"))
-							} finally {
-								runOnUiThread {
-									hideProgress()
-									updateProgress(0f)
+								} catch (e: Throwable) {
+									if (file.isFile) {
+										file.delete()
+									}
+									json().toJson(DownloadResult(false, e.message ?: "下载失败！"))
+								} finally {
+									runOnUiThread {
+										hideProgress()
+										updateProgress(0f)
+									}
 								}
 							}
+						} else {
+							json().toJson(DownloadResult(false, "创建下载目录失败！"))
 						}
 					}
 

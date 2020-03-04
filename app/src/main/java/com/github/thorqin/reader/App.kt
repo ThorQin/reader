@@ -5,6 +5,8 @@ import android.app.AlertDialog
 import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.os.Build
+import android.os.Environment
 import android.widget.Toast
 import com.github.thorqin.reader.utils.*
 import org.apache.commons.io.FileUtils
@@ -455,6 +457,8 @@ class App : Application() {
 		fun toast(context: Context, msg: String, showItem: Int = Toast.LENGTH_LONG) {
 			Toast.makeText(context, msg, showItem).show()
 		}
+
+
 	}
 
 	lateinit var config: AppConfig
@@ -682,6 +686,25 @@ class App : Application() {
 			})
 		} else {
 			success(mainPage!!)
+		}
+	}
+
+	fun getExternalBookRootDir(): File {
+		return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+			this.getExternalFilesDir("download")!!
+		} else {
+			@Suppress("DEPRECATION")
+			val extRoot = Environment.getExternalStorageDirectory()
+			extRoot.resolve("com.github.thorqin.reader")
+		}
+	}
+
+	fun getExternalRootDir(): File {
+		return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+			this.getExternalFilesDir("download")!!
+		} else {
+			@Suppress("DEPRECATION")
+			Environment.getExternalStorageDirectory()
 		}
 	}
 
