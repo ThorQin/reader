@@ -134,8 +134,8 @@ class UploadActivity : AppCompatActivity() {
 		}
 
 		server.post("/upload") { request, response ->
-			if (Regex("^multipart/form-data;.*").matches(request.body.contentType)) {
-				val body = request.body as MultipartFormDataBody
+			if (Regex("^multipart/form-data;.*").matches(request.headers.get("contentType"))) {
+				val body = request.getBody<MultipartFormDataBody>()
 				var fileStream : FileOutputStream? = null
 				val uploadFileList = arrayListOf<File>()
 				var errorMessage: String? = null

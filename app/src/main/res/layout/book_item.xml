@@ -13,9 +13,9 @@
 		android:layout_height="match_parent"
 		android:layout_gravity="center|center_vertical|fill_vertical"
 		android:background="@color/colorAccent"
-		android:gravity="center_vertical"
+		android:gravity="center"
 		android:text="@string/delete_item"
-		android:textAlignment="center"
+
 		android:textColor="@color/colorWhite" />
 
 	<LinearLayout
@@ -24,6 +24,7 @@
 		android:layout_height="wrap_content"
 		android:background="@drawable/book_item_bg"
 		android:clickable="true"
+		android:focusable="true"
 		android:gravity="center_vertical"
 		android:orientation="horizontal"
 		android:paddingTop="10dp"
@@ -45,8 +46,8 @@
 				android:id="@+id/book_name"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-				android:maxLines="2"
 				android:ellipsize="end"
+				android:maxLines="2"
 				android:textColor="#CCCCCC"
 				android:textSize="10pt" />
 

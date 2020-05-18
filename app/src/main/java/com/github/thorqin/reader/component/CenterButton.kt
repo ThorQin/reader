@@ -4,10 +4,10 @@ import android.content.Context
 import android.graphics.Canvas
 import android.util.AttributeSet
 import android.view.Gravity
-import android.widget.Button
+import androidx.appcompat.widget.AppCompatButton
 
 
-class CenterButton : Button {
+class CenterButton : AppCompatButton {
 	constructor(context: Context?) : super(context)
 	constructor(context: Context?, attrs: AttributeSet?) : super(
 		context,
